@@ -7,6 +7,7 @@ Mọi tài liệu viết bằng Markdown và thay đổi **chỉ qua Pull Reques
 
 | Thư mục / file | Nội dung | Người viết | Reviewer | Task Jira |
 |---|---|---|---|---|
+| `00-process/quy-trinh-lam-viec.md` | Quy trình làm việc: Jira, nhánh Git, Pull Request, khi nào task Done | TV1 Tuấn | TV4 | SCRUM-15 |
 | `01-srs/srs.md` | SRS: giới thiệu, bên liên quan, yêu cầu chức năng (mã FR), phi chức năng | TV1 Tuấn | TV4 | SCRUM-14 |
 | `01-srs/privacy.md` | Bảo mật và quyền riêng tư dữ liệu | TV1 Tuấn | TV4 | SCRUM-17 |
 | `01-srs/use-cases/auth.md` | Use case Auth, RBAC, Profile, Admin | TV1 Tuấn | TV4 | SCRUM-26 |
@@ -35,22 +36,6 @@ Mọi tài liệu viết bằng Markdown và thay đổi **chỉ qua Pull Reques
 - Mã yêu cầu dùng thống nhất: `FR-<NHÓM>-<số>` (chức năng), `NFR-<số>` (phi chức năng), `UC-<NHÓM>-<số>` (use case).
 - Mọi thay đổi sau **Docs Gate** (cuối Sprint 2) phải cập nhật lại tài liệu gốc (ERD, OpenAPI, SRS) trước khi sửa code.
 
-## Quy trình viết tài liệu (task nào cũng làm như vậy)
-1. Nhận task trên Jira, kéo sang **In Progress**.
-2. Tạo nhánh từ `develop`: `git checkout -b docs/SCRUM-18-genealogy`.
-3. Điền vào file của mình, commit có mã task: `SCRUM-18: use case module Gia phả`.
-4. Push và mở **Pull Request** vào `develop`, chọn đúng **Reviewer**, dán link PR vào task Jira, kéo task sang **In Review**.
-5. Reviewer comment từng dòng, **Approve** hoặc **Request changes**. Người viết sửa và push thêm.
-6. Có Approve thì **Squash and merge**, xóa nhánh; reviewer kéo task sang **Done**. 
-
-## Khi nào một task được coi là Done
-- Có tiêu chí hoàn thành trong mô tả task trên Jira và đã tự kiểm tra theo đó.
-- Mọi thay đổi (code hoặc tài liệu) đã vào `develop` qua Pull Request, có ít nhất 1 Approve từ reviewer.
-- Task code: có test, không còn secret trong code, API mới đã có trong Swagger.
-- Task tài liệu: đủ các mục theo khung sườn, đúng mã FR và quy ước API.
-- Link Pull Request đã dán vào task Jira; reviewer là người kéo task sang Done.
-
-## Hạn của Sprint 1 (Thứ Sáu 9/10, 23:30)
-- Thứ Tư 7/10: kiến trúc (SCRUM-23), quy ước API chốt (SCRUM-21).
-- Thứ Năm 8/10: tất cả tài liệu nộp review.
-- Thứ Sáu 9/10: reviewer comment, sửa, merge, họp Review + Retro. Sáng Thứ Bảy báo cáo.
+## Quy trình làm việc
+Cách nhận task trên Jira, đặt tên nhánh và commit, mở Pull Request, và khi nào task được coi là Done:
+xem **[quy-trinh-lam-viec.md](00-process/quy-trinh-lam-viec.md)**.
