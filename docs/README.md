@@ -41,7 +41,7 @@ Mọi tài liệu viết bằng Markdown và thay đổi **chỉ qua Pull Reques
 3. Điền vào file của mình, commit có mã task: `SCRUM-18: use case module Gia phả`.
 4. Push và mở **Pull Request** vào `develop`, chọn đúng **Reviewer**, dán link PR vào task Jira, kéo task sang **In Review**.
 5. Reviewer comment từng dòng, **Approve** hoặc **Request changes**. Người viết sửa và push thêm.
-6. Có Approve thì **Squash and merge**, xóa nhánh; reviewer kéo task sang **Done**.
+6. Có Approve thì **Squash and merge**, xóa nhánh; reviewer kéo task sang **Done**. 
 
 ## Khi nào một task được coi là Done
 - Có tiêu chí hoàn thành trong mô tả task trên Jira và đã tự kiểm tra theo đó.
