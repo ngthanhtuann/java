@@ -43,6 +43,13 @@ Mọi tài liệu viết bằng Markdown và thay đổi **chỉ qua Pull Reques
 5. Reviewer comment từng dòng, **Approve** hoặc **Request changes**. Người viết sửa và push thêm.
 6. Có Approve thì **Squash and merge**, xóa nhánh; reviewer kéo task sang **Done**.
 
+## Khi nào một task được coi là Done
+- Có tiêu chí hoàn thành trong mô tả task trên Jira và đã tự kiểm tra theo đó.
+- Mọi thay đổi (code hoặc tài liệu) đã vào `develop` qua Pull Request, có ít nhất 1 Approve từ reviewer.
+- Task code: có test, không còn secret trong code, API mới đã có trong Swagger.
+- Task tài liệu: đủ các mục theo khung sườn, đúng mã FR và quy ước API.
+- Link Pull Request đã dán vào task Jira; reviewer là người kéo task sang Done.
+
 ## Hạn của Sprint 1 (Thứ Sáu 9/10, 23:30)
 - Thứ Tư 7/10: kiến trúc (SCRUM-23), quy ước API chốt (SCRUM-21).
 - Thứ Năm 8/10: tất cả tài liệu nộp review.
