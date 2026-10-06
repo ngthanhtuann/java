@@ -1,0 +1,39 @@
+# Chạy toàn bộ khung hệ thống: docker compose up --build
+# Chỉ chạy cơ sở dữ liệu (để chạy backend bằng IDE): docker compose up -d db
+services:
+  db:
+    image: pgvector/pgvector:pg16
+    container_name: familyconnect-db
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-familyconnect}
+      POSTGRES_USER: ${POSTGRES_USER:-familyconnect}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-familyconnect}
+    ports:
+      - "5432:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-familyconnect} -d ${POSTGRES_DB:-familyconnect}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  backend:
+    build: ./backend
+    container_name: familyconnect-backend
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/${POSTGRES_DB:-familyconnect}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-familyconnect}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-familyconnect}
+    ports:
+      - "8080:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # frontend: sẽ thêm ở các task sau (Next.js, SCRUM-33)
+
+volumes:
+  db_data:
