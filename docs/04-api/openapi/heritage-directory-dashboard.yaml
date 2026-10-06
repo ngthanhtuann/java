@@ -1,0 +1,32 @@
+# Người viết: TV4. Theo quy ước ở ../conventions.md
+openapi: 3.0.3
+info:
+  title: FamilyConnect - Heritage, Directory, Dashboard
+  version: 0.1.0
+servers:
+  - url: /api/v1
+paths: {}
+# Mẫu một endpoint (xóa dấu # và chỉnh lại):
+# paths:
+#   /auth/login:
+#     post:
+#       summary: Đăng nhập
+#       security: []
+#       requestBody:
+#         required: true
+#         content:
+#           application/json:
+#             schema:
+#               type: object
+#               properties:
+#                 email: { type: string }
+#                 password: { type: string }
+#       responses:
+#         '200': { description: Thành công (access token, refresh token) }
+#         '401': { description: AUTH_001 sai email hoặc mật khẩu }
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
