@@ -76,11 +76,13 @@ Nhờ tuân thủ nguyên lý thiết kế module hóa từ đầu, quá trình 
 * **Định tuyến tại API Gateway (Nginx):** Chỉ cần cập nhật cấu hình của Nginx Load Balancer để `proxy_pass` thẳng sang máy chủ AI Service mới. Web và Mobile hoàn toàn không phải sửa đổi code gọi API.
 * **Phân lập cơ sở dữ liệu:** Các bảng có tiền tố `ai_` trong schema public (như `ai_embedding_chunk`, `ai_chat_session`...) có thể chuyển sang schema `ai` riêng bằng một migration khi tách service, và cấp tài khoản DB độc lập chỉ có quyền read-only trên dữ liệu Core.
 ## 3. Sơ đồ triển khai Docker
+
+```mermaid
 graph TD
     Mobile["Mobile App<br/>React Native / Expo"]
     Web["Trình duyệt<br/>Next.js Web"]
     LLM["LLM API bên ngoài<br/>(Internet, HTTPS)"]
-```mermaid
+
     subgraph DockerHost ["Docker Environment (máy chủ triển khai)"]
         Nginx["Container: Nginx<br/>Cổng 80 / 443"]
         subgraph Net ["Docker network: familyconnect-net"]
@@ -106,6 +108,7 @@ graph TD
     Spring2 -->|"HTTPS"| LLM
     DB --- Pgdata
 ```
+
 Ghi chú ngay dưới sơ đồ: "Hiện chạy 1 bản backend; đích triển khai ở Sprint 7 (SCRUM-96) là 2 bản."
 ## 4. Sơ đồ trình tự
 ### 4.1 Đăng nhập JWT
