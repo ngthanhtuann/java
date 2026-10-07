@@ -53,7 +53,7 @@ flowchart LR
     %% ĐỊNH DẠNG MŨI TÊN (Đã sửa lại index từ 0 -> 7)
     linkStyle 0,1,2,3,4,5,6 stroke:#444,stroke-width:1px;
     linkStyle 7 stroke:red,stroke-dasharray: 5 5,stroke-width:2px;
-
+```
 ## 2. Quyết định thiết kế lớp AI Service
 ### 2.1. Quyết định kiến trúc
 Lớp AI Service được quyết định tích hợp trực tiếp bên trong kiến trúc nguyên khối (Modular Monolith) của Spring Boot hiện tại, sử dụng thư viện Spring AI.
@@ -80,7 +80,7 @@ graph TD
     Mobile["Mobile App<br/>React Native / Expo"]
     Web["Trình duyệt<br/>Next.js Web"]
     LLM["LLM API bên ngoài<br/>(Internet, HTTPS)"]
-
+```mermaid
     subgraph DockerHost ["Docker Environment (máy chủ triển khai)"]
         Nginx["Container: Nginx<br/>Cổng 80 / 443"]
         subgraph Net ["Docker network: familyconnect-net"]
@@ -105,10 +105,11 @@ graph TD
     Spring1 -->|"HTTPS"| LLM
     Spring2 -->|"HTTPS"| LLM
     DB --- Pgdata
-Loading
+```
 Ghi chú ngay dưới sơ đồ: "Hiện chạy 1 bản backend; đích triển khai ở Sprint 7 (SCRUM-96) là 2 bản."
 ## 4. Sơ đồ trình tự
 ### 4.1 Đăng nhập JWT
+```mermaid
 sequenceDiagram
     participant U as Người dùng
     participant FE as Web/Mobile
@@ -122,8 +123,9 @@ sequenceDiagram
         note over BE: Ký Access Token & Refresh Token
         BE-->>FE: access token + refresh token
     end
-
+```
 ### 4.2 Hỏi chatbot AI
+```mermaid
 sequenceDiagram
     participant U as Người dùng
     participant FE as Web/Mobile
@@ -152,6 +154,7 @@ sequenceDiagram
         AiServ-->>Gateway: ChatResponse (bao gồm nguồn)
         Gateway-->>FE: 200 OK (ChatResponse)
     end
+```
 ## 5. Cấu trúc mã nguồn
 
 ### Backend (Spring Boot)
@@ -170,19 +173,23 @@ src/main/java/com/familyconnect/
     ├── dashboard/          # thống kê, báo cáo
     └── ai/                 # tìm kiếm ngữ nghĩa, chatbot, giải thích, tóm tắt, gợi ý
         └── (mỗi module đều có) controller/ service/ repository/ dto/ entity/
+```
 ### Frontend (Next.js)
+```text
 src/
 ├── app/          # Chứa cấu trúc định tuyến (Routing - App Router).
 ├── components/   # Chứa các UI Component độc lập, tái sử dụng (Header, Sidebar...).
 ├── lib/          # Chứa các tiện ích và cấu hình dùng chung toàn dự án.
 └── services/     # Lớp trung gian gọi API từ Spring Boot. Dùng kiểu dữ liệu sinh từ OpenAPI.
+```
 ### Mobile (Expo)
+```text
 src/
 ├── navigation/   # Chứa các file cấu hình luồng chuyển trang (React Navigation).
 ├── screens/      # Chứa các file giao diện toàn màn hình (HomeScreen, ChatAiScreen...).
 ├── components/   # Chứa các thành phần UI dùng chung (Card, ListItem...).
 └── services/     # Dùng chung hợp đồng API: kiểu dữ liệu sinh từ file OpenAPI (docs/04-api/openapi/), không viết tay hai nơi.
-
+```
 ## 6. Đáp ứng yêu cầu phi chức năng (NFR)
 Hệ thống được thiết kế không chỉ để giải quyết các luồng nghiệp vụ mà còn đảm bảo nền tảng kỹ thuật vững chắc thông qua việc tuân thủ 5 yêu cầu phi chức năng cốt lõi sau:
 
