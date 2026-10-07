@@ -37,7 +37,7 @@ flowchart LR
     end
 
     Frontend -->|HTTPS REST /api/v1| API
-    API -->|gọi service| CoreModules
+    API -.->|"Response: ErrorResponse <br/> (theo conventions.md)"| Frontend
     API -->|gọi service| Ai
     CoreModules -->|CRUD| DB
     Ai -->|embeddings/vector search| DB
@@ -45,8 +45,6 @@ flowchart LR
     Ai -->|lưu/đọc tệp| Uploads
     
     classDef errorType fill:#f9f,stroke:#333,stroke-width:2px,color:black;
-    API -.->|Response: ErrorResponse <br/> (theo conventions.md)| Frontend
-
     linkStyle 0,1,2,3,4,5,6,7 stroke:#444,stroke-width:1px;
     linkStyle 8 stroke:red,stroke-dasharray: 5 5,stroke-width:2px;
 ## 2. Quyết định thiết kế lớp AI Service
