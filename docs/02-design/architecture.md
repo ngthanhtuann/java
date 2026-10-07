@@ -14,17 +14,19 @@ flowchart LR
 
     subgraph Backend ["Spring Boot Backend (khối nguyên khối)"]
         API["API Gateway (REST Controller)"]
+        
         subgraph CoreModules ["Core Modules"]
-            Auth[Auth Module]
-            row1_2["Người dùng, Admin<br/>Hồ sơ, vai trò, kiểm duyệt, sao lưu"]
-            Gene[Genealogy Module]
-            Commu[Community Module]
-            Event[Events Module]
-            Heri[Heritage Module]
-            Direc[Directory Module]
-            Dash[Dashboard Module]
+            Auth[Xác thực - auth]
+            row1_2["Người dùng, Admin<br/>(user, admin)"]
+            Gene[Gia phả - genealogy]
+            Commu[Cộng đồng - community]
+            Event[Sự kiện - events]
+            Heri[Di sản - heritage]
+            Direc[Danh bạ - directory]
+            Dash[Thống kê - dashboard]
         end
-        Ai("AI Service (AiGateway interface) <br/> - tìm kiếm ngữ nghĩa <br/> - chatbot <br/> - phân tích/gợi ý")
+        
+        Ai("AI Service (AiGateway) <br/> - tìm kiếm ngữ nghĩa <br/> - chatbot <br/> - phân tích/gợi ý")
     end
 
     subgraph External ["Dịch vụ bên ngoài"]
@@ -32,12 +34,13 @@ flowchart LR
     end
     
     subgraph DatabaseLayer ["Lớp dữ liệu"]
-        DB[(PostgreSQL + pgvector)]
+        DB[(PostgreSQL + pgvector<br/>schema public)]
         Uploads[("Local/Cloud Storage <br/> (ảnh, tệp tải lên)")]
     end
 
+    %% CÁC ĐƯỜNG MŨI TÊN (từ 0 đến 7)
     Frontend -->|HTTPS REST /api/v1| API
-    API -.->|"Response: ErrorResponse <br/> (theo conventions.md)"| Frontend
+    API -->|gọi service| CoreModules
     API -->|gọi service| Ai
     CoreModules -->|CRUD| DB
     Ai -->|embeddings/vector search| DB
@@ -45,10 +48,13 @@ flowchart LR
     Ai -->|lưu/đọc tệp| Uploads
     
     classDef errorType fill:#f9f,stroke:#333,stroke-width:2px,color:black;
-    linkStyle 0,1,2,3,4,5,6,7 stroke:#444,stroke-width:1px;
-    linkStyle 8 stroke:red,stroke-dasharray: 5 5,stroke-width:2px;
-## 2. Quyết định thiết kế lớp AI Service
+    API -.->|Response: ErrorResponse <br/> (theo conventions.md)| Frontend
 
+    %% ĐỊNH DẠNG MŨI TÊN (Đã sửa lại index từ 0 -> 7)
+    linkStyle 0,1,2,3,4,5,6 stroke:#444,stroke-width:1px;
+    linkStyle 7 stroke:red,stroke-dasharray: 5 5,stroke-width:2px;
+
+## 2. Quyết định thiết kế lớp AI Service
 ### 2.1. Quyết định kiến trúc
 Lớp AI Service được quyết định tích hợp trực tiếp bên trong kiến trúc nguyên khối (Modular Monolith) của Spring Boot hiện tại, sử dụng thư viện Spring AI.
 * **Phân định định tuyến:** Tất cả các API liên quan đến trí tuệ nhân tạo được nhóm thống nhất dưới tiền tố đường dẫn `/api/v1/ai/**`.
