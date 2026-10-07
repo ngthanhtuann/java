@@ -39,16 +39,16 @@ flowchart LR
     end
 
     %% CÁC ĐƯỜNG MŨI TÊN (từ 0 đến 7)
-    Frontend -->|HTTPS REST /api/v1| API
-    API -->|gọi service| CoreModules
-    API -->|gọi service| Ai
-    CoreModules -->|CRUD| DB
-    Ai -->|embeddings/vector search| DB
-    Ai -->|truy vấn| LLM
-    Ai -->|lưu/đọc tệp| Uploads
+    Frontend -->|"HTTPS REST /api/v1"| API
+    API -->|"gọi service"| CoreModules
+    API -->|"gọi service"| Ai
+    CoreModules -->|"CRUD"| DB
+    Ai -->|"embeddings/vector search"| DB
+    Ai -->|"truy vấn"| LLM
+    Ai -->|"lưu/đọc tệp"| Uploads
     
     classDef errorType fill:#f9f,stroke:#333,stroke-width:2px,color:black;
-    API -.->|Response: ErrorResponse <br/> (theo conventions.md)| Frontend
+    API -.->|"Response: ErrorResponse <br/> (theo conventions.md)"| Frontend
 
     %% ĐỊNH DẠNG MŨI TÊN (Đã sửa lại index từ 0 -> 7)
     linkStyle 0,1,2,3,4,5,6 stroke:#444,stroke-width:1px;
