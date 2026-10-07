@@ -68,7 +68,3 @@ Có 4 vai trò: `GUEST` (khách), `MEMBER` (thành viên), `BRANCH_ADMIN` (trư�
 
 **Hạn chế:** đây là đồ án môn học, chưa được kiểm định theo quy định bảo vệ dữ liệu cá nhân. Bản demo chỉ dùng **dữ liệu mẫu**, không nhập thông tin thật của người thân.
 
-## 8. Cần nhóm xác nhận
-- [ ] Trẻ em là **dưới 16 tuổi**, không có tài khoản riêng.
-- [ ] Thành viên thường **không** xem ngày sinh đầy đủ, số điện thoại, email của người khác (chỉ trưởng chi và quản trị).
-- [ ] Danh sách **được gửi và không gửi** cho AI ở mục 6, đặc biệt việc loại trẻ em.
