@@ -1,228 +1,217 @@
-1. Sơ đồ thành phần kiến trúc (Component Diagram)
-Hệ thống FamilyConnect áp dụng mô hình kiến trúc Client-Server với giao diện đa nền tảng và backend nguyên khối phân rã theo mô-đun (Modular Monolith). Lớp AI Service được tích hợp trực tiếp nhưng hoạt động như một dịch vụ độc lập nội bộ.
-graph TD
-    Mobile["Mobile App<br/>React Native / Expo"]
-    Web["Next.js Web<br/>Cổng quản lý"]
+# Kiến trúc tổng thể
+> **Người viết:** TV4 (Huy Quốc) | **Reviewer:** TV2 (Nguyễn Minh Trí) | **Task Jira:** SCRUM-23 | **Hạn nộp review:** Thứ Tư 7/10
+> **Trạng thái:** Chờ review
 
-    subgraph SpringBoot ["Spring Boot API"]
-        direction TB
-        Common["common (dùng chung)<br/>JWT filter, audit log, ProblemDetail"]
-        
-        row1_1["Gia phả<br/>Quan hệ họ hàng"]
-        row1_2["Người dùng<br/>Hồ sơ, vai trò"]
-        row1_3["Xác thực<br/>Đăng nhập, refresh"]
-        
-        row2_1["Dashboard<br/>Thống kê"]
-        row2_2["Heritage, Directory<br/>Di sản, danh bạ"]
-        row2_3["Community, Events<br/>Cộng đồng, sự kiện"]
-        
-        AIPackage["Gói ai: /api/v1/ai/**<br/>controller, AiGateway, Spring AI adapter"]
+## 1. Sơ đồ thành phần
+> Thể hiện đúng kiến trúc đề tài: **Web Management Portal**, **Mobile Application**, **AI Service Layer** kết nối qua **RESTful API**. Các khối logic trong Spring Boot backend và cách xử lý lỗi tập trung.
 
-        Common ~~~ row1_2
-        row1_1 ~~~ row2_1
-        row1_2 ~~~ row2_2
-        row1_3 ~~~ row2_3
-        row2_2 ~~~ AIPackage
+```mermaid
+flowchart LR
+    subgraph Frontend ["Frontend (web/mobile)"]
+        Web[Next.js Web]
+        Mobile[Mobile App - React Native/Expo]
     end
 
-    DB["PostgreSQL + pgvector<br/>schema public, schema ai"]
-    LLM["LLM API bên ngoài<br/>Chat, embedding"]
-
-    Mobile -->|"RESTful API"| SpringBoot
-    Web -->|"RESTful API"| SpringBoot
-    
-    SpringBoot -->|"JPA read/write"| DB
-    AIPackage -->|"Semantic search"| DB
-    AIPackage -->|"Prompt / response"| LLM
-
-
-2. Quyết định thiết kế Lớp Dịch vụ AI (AI Service Layer)
-2.1 Quyết định kiến trúc Lớp AI Service được quyết định tích hợp trực tiếp bên trong kiến trúc nguyên khối (Modular Monolith) của Spring Boot hiện tại, sử dụng thư viện Spring AI.
-Phân định định tuyến: Tất cả các API liên quan đến trí tuệ nhân tạo được nhóm thống nhất dưới tiền tố đường dẫn /api/v1/ai/**.
-Phân lập mã nguồn: Toàn bộ logic AI được đóng gói thành một package độc lập hoàn toàn (gồm controller, service/AiGateway, adapter riêng).
-Giao tiếp: Mặc dù nằm chung một mã nguồn, package AI được thiết kế để hoạt động như một lớp độc lập, các module khác khi cần tương tác sẽ gọi qua các interface chuẩn hoặc giao tiếp qua REST nội bộ nhằm duy trì tính liên kết lỏng (loose coupling).
-2.2 Lý do lựa chọn (Ưu điểm trong giai đoạn đầu)
-Tối ưu hóa nguồn lực và triển khai: Việc duy trì một máy chủ backend nguyên khối giúp đơn giản hóa quy trình CI/CD, tiết kiệm chi phí hạ tầng (không phải thuê nhiều server) và giảm thiểu độ phức tạp trong việc quản lý, giám sát hệ thống mạng nội bộ.
-Độ trễ thấp (Low Latency) cho luồng RAG: Đặt AI Service cùng môi trường với Core API cho phép nó truy xuất trực tiếp xuống cơ sở dữ liệu PostgreSQL. Việc trích xuất dữ liệu gia phả làm ngữ cảnh (context) diễn ra tức thời, loại bỏ hoàn toàn độ trễ mạng (network latency) so với việc gọi chéo giữa các microservices riêng biệt.
-Tận dụng hệ sinh thái Spring: Spring AI cung cấp các interface chuẩn hóa, giúp kỹ sư Java thao tác dễ dàng với LLM bên ngoài và cơ sở dữ liệu vector (pgvector) mà không ép buộc đội dự án phải chuyển sang một stack công nghệ hoàn toàn mới (như Python) ngay từ đầu.
-2.3 Rủi ro tiềm ẩn
-Cạnh tranh tài nguyên (Resource Contention): Các tác vụ xử lý của AI (như embedding, tìm kiếm vector, mapping dữ liệu RAG) ngốn rất nhiều CPU và RAM. Nếu lượng truy cập AI tăng đột biến, nó có thể chiếm dụng tài nguyên của hệ thống, làm chậm hoặc gây gián đoạn (timeout) các API nghiệp vụ cốt lõi khác (đăng nhập, xem danh bạ).
-Điểm nghẽn về mở rộng (Scaling Bottleneck): Khi tính năng AI bị quá tải, hệ thống không thể chỉ tăng cường phần cứng cho riêng khối AI, mà bắt buộc phải nhân bản (scale out) toàn bộ ứng dụng Spring Boot cồng kềnh, dẫn đến lãng phí tài nguyên không cần thiết.
-Hạn chế về thư viện học máy chuyên sâu: Dù Spring AI đang phát triển mạnh, nhưng Python vẫn là nền tảng thống trị về AI mã nguồn mở. Việc gắn logic vào Java có thể gây bất lợi nếu tương lai dự án muốn tự huấn luyện mô hình (train model) hoặc tùy biến các thuật toán AI phức tạp.
-2.4 Chiến lược phân tách thành dịch vụ độc lập (Microservice Extraction) sau này Nhờ tuân thủ nguyên lý thiết kế module hóa từ đầu, quá trình chuyển đổi sang Microservices khi dự án mở rộng sẽ diễn ra rất mượt mà mà không làm gián đoạn hệ thống Client:
-Tách rời mã nguồn (Decoupling): Bốc tách toàn bộ package AI hiện tại sang một dự án hoàn toàn mới. Đội dự án có thể cân nhắc viết lại service này bằng Python (FastAPI/Flask) để tối ưu hóa hiệu năng xử lý AI, hoặc tiếp tục dùng một bản Spring Boot siêu nhẹ.
-Định tuyến tại API Gateway (Nginx): Chỉ cần cập nhật cấu hình của Nginx Load Balancer. Khi nhận request có tiền tố /api/v1/ai/**, Nginx sẽ tự động proxy_pass thẳng sang máy chủ AI Service mới thay vì máy chủ Core API. Ứng dụng Web và Mobile hoàn toàn không phải sửa đổi bất kỳ dòng code gọi API nào. 
-Phân lập cơ sở dữ liệu: Dịch vụ AI mới sẽ được cấp một tài khoản kết nối riêng tới PostgreSQL, được phân quyền chỉ thao tác (Read/Write) trên schema ai (chứa dữ liệu vector) và chỉ có quyền
-đọc (Read-only) trên schema public để đảm bảo tính toàn vẹn dữ liệu của các module nghiệp vụ khác.
-
-
-3. Sơ đồ triển khai hệ thống (Deployment Diagram)
-Hệ thống được container hóa hoàn toàn bằng Docker. Sử dụng Nginx làm API Gateway để điều hướng lưu lượng từ thiết bị di động (Mobile) và trình duyệt (Web) gọi chung một nguồn API nội bộ.
-graph TD
-    Mobile["Mobile App<br/>React Native / Expo"]
-    Web["Next.js Web<br/>Trình duyệt"]
-
-    subgraph DockerHost ["Docker Environment (Máy chủ triển khai)"]
-        direction TB
-        
-        Nginx["Container: Nginx Load Balancer<br/>Cổng: 80 / 443"]
-        
-        subgraph DockerNetwork ["Docker Bridge Network: familyconnect-net"]
-            direction TB
-            NextJS["Container: Next.js Web<br/>Cổng nội bộ: 3000"]
-            Spring["Container: Spring Boot API<br/>Cổng nội bộ: 8080"]
-            DB_Container["Container: PostgreSQL + pgvector<br/>Cổng nội bộ: 5432"]
-            
-            NextJS ~~~ Spring ~~~ DB_Container
+    subgraph Backend ["Spring Boot Backend (khối nguyên khối)"]
+        API["API Gateway (REST Controller)"]
+        subgraph CoreModules ["Core Modules"]
+            Auth[Auth Module]
+            row1_2["Người dùng, Admin<br/>Hồ sơ, vai trò, kiểm duyệt, sao lưu"]
+            Gene[Genealogy Module]
+            Commu[Community Module]
+            Event[Events Module]
+            Heri[Heritage Module]
+            Direc[Directory Module]
+            Dash[Dashboard Module]
         end
-        
-        Volume[("Docker Volume<br/>pgdata_volume")]
+        Ai("AI Service (AiGateway interface) <br/> - tìm kiếm ngữ nghĩa <br/> - chatbot <br/> - phân tích/gợi ý")
     end
 
-    Mobile -->|"HTTPS (RESTful API)"| Nginx
-    Web -->|"HTTPS (RESTful API)"| Nginx
+    subgraph External ["Dịch vụ bên ngoài"]
+        LLM[LLM API]
+    end
     
-    Nginx -->|"Proxy Pass: /"| NextJS
-    Nginx -->|"Proxy Pass: /api/v1/*"| Spring
-    
-    Spring -->|"JDBC / TCP"| DB_Container
-    DB_Container ---|"Mount dữ liệu cứng"| Volume
-
-
-4. Thiết kế luồng xử lý (Sequence Diagrams)
-4.1. Luồng xác thực đăng nhập JWT (Stateless Authentication)
-sequenceDiagram
-    autonumber
-    
-    actor User as Người dùng
-    participant Client as Web / Mobile
-    participant Nginx as Nginx
-    participant AuthCtrl as AuthController
-    participant AuthSvc as AuthService
-    participant UserRepo as UserRepository
-    participant DB as PostgreSQL
-    participant Audit as AuditService
-
-    User->>Client: Nhập email và mật khẩu
-    Client->>Nginx: POST /api/v1/auth/login
-    Nginx->>AuthCtrl: chuyển tiếp tới một backend
-    AuthCtrl->>AuthSvc: login(LoginRequest)
-    AuthSvc->>UserRepo: findByEmail
-    UserRepo->>DB: SELECT user
-    DB-->>UserRepo: user và password hash
-    UserRepo-->>AuthSvc: User
-    AuthSvc->>AuthSvc: BCrypt so khớp mật khẩu
-    
-    alt hợp lệ
-        AuthSvc->>AuthSvc: tạo access token và refresh token
-        AuthSvc->>Audit: ghi LOGIN_SUCCESS
-        AuthSvc-->>AuthCtrl: TokenResponse
-        AuthCtrl-->>Client: 200 TokenResponse
-        
-        Note right of Client: Các request sau gửi header Authorization Bearer
-        Client->>Client: lưu token
-        
-    else sai thông tin
-        AuthSvc->>Audit: ghi LOGIN_FAILED
-        AuthCtrl-->>Client: 401 ProblemDetail
+    subgraph DatabaseLayer ["Lớp dữ liệu"]
+        DB[(PostgreSQL + pgvector)]
+        Uploads[("Local/Cloud Storage <br/> (ảnh, tệp tải lên)")]
     end
 
+    Frontend -->|HTTPS REST /api/v1| API
+    API -->|gọi service| CoreModules
+    API -->|gọi service| Ai
+    CoreModules -->|CRUD| DB
+    Ai -->|embeddings/vector search| DB
+    Ai -->|truy vấn| LLM
+    Ai -->|lưu/đọc tệp| Uploads
+    
+    classDef errorType fill:#f9f,stroke:#333,stroke-width:2px,color:black;
+    API -.->|Response: ErrorResponse <br/> (theo conventions.md)| Frontend
 
-4.2. Luồng hỏi Chatbot AI (Tích hợp RAG Pipeline)
+    linkStyle 0,1,2,3,4,5,6,7 stroke:#444,stroke-width:1px;
+    linkStyle 8 stroke:red,stroke-dasharray: 5 5,stroke-width:2px;
+## 2. Quyết định thiết kế lớp AI Service
+
+### 2.1. Quyết định kiến trúc
+Lớp AI Service được quyết định tích hợp trực tiếp bên trong kiến trúc nguyên khối (Modular Monolith) của Spring Boot hiện tại, sử dụng thư viện Spring AI.
+* **Phân định định tuyến:** Tất cả các API liên quan đến trí tuệ nhân tạo được nhóm thống nhất dưới tiền tố đường dẫn `/api/v1/ai/**`.
+* **Phân lập mã nguồn:** Toàn bộ logic AI được đóng gói thành một package độc lập hoàn toàn (gồm `controller`, `service`/`AiGateway`, `repository`, `dto`, `entity`).
+* **Giao tiếp:** Khi còn là một khối, các module khác gọi AI qua interface Java `AiGateway`. REST chỉ dùng khi tách thành service riêng (xem mục 2.4).
+
+### 2.2. Lý do lựa chọn (Ưu điểm trong giai đoạn đầu)
+* **Tối ưu hóa nguồn lực và triển khai:** Việc duy trì một máy chủ backend nguyên khối giúp đơn giản hóa quy trình CI/CD, tiết kiệm chi phí hạ tầng (không phải thuê nhiều server) và giảm thiểu độ phức tạp trong việc quản lý, giám sát hệ thống mạng nội bộ.
+* **Độ trễ thấp (Low Latency) cho luồng RAG:** Đặt AI Service cùng môi trường với Core API cho phép nó truy xuất trực tiếp xuống cơ sở dữ liệu PostgreSQL. Việc trích xuất dữ liệu gia phả làm ngữ cảnh (context) diễn ra tức thời, loại bỏ hoàn toàn độ trễ mạng so với việc gọi chéo giữa các microservices riêng biệt.
+* **Tận dụng hệ sinh thái Spring:** Spring AI cung cấp các interface chuẩn hóa, giúp thao tác dễ dàng với LLM bên ngoài và cơ sở dữ liệu vector (pgvector).
+
+### 2.3. Rủi ro tiềm ẩn
+* **Cạnh tranh tài nguyên (Resource Contention):** Các tác vụ xử lý của AI (như embedding, tìm kiếm vector, mapping dữ liệu RAG) ngốn rất nhiều CPU và RAM. Nếu lượng truy cập AI tăng đột biến, nó có thể chiếm dụng tài nguyên của hệ thống, làm chậm hoặc gây gián đoạn (timeout) các API nghiệp vụ cốt lõi khác.
+* **Điểm nghẽn về mở rộng (Scaling Bottleneck):** Khi tính năng AI bị quá tải, hệ thống bắt buộc phải nhân bản (scale out) toàn bộ ứng dụng Spring Boot cồng kềnh, dẫn đến lãng phí tài nguyên không cần thiết.
+
+### 2.4. Chiến lược phân tách thành dịch vụ độc lập (Microservice Extraction) sau này
+Nhờ tuân thủ nguyên lý thiết kế module hóa từ đầu, quá trình chuyển đổi sang Microservices khi dự án mở rộng sẽ diễn ra rất mượt mà:
+* **Tách rời mã nguồn (Decoupling):** Bóc tách toàn bộ package AI hiện tại sang một dự án hoàn toàn mới (có thể viết lại bằng Python/FastAPI hoặc bản Spring Boot nhẹ).
+* **Định tuyến tại API Gateway (Nginx):** Chỉ cần cập nhật cấu hình của Nginx Load Balancer để `proxy_pass` thẳng sang máy chủ AI Service mới. Web và Mobile hoàn toàn không phải sửa đổi code gọi API.
+* **Phân lập cơ sở dữ liệu:** Các bảng có tiền tố `ai_` trong schema public (như `ai_embedding_chunk`, `ai_chat_session`...) có thể chuyển sang schema `ai` riêng bằng một migration khi tách service, và cấp tài khoản DB độc lập chỉ có quyền read-only trên dữ liệu Core.
+## 3. Sơ đồ triển khai Docker
+graph TD
+    Mobile["Mobile App<br/>React Native / Expo"]
+    Web["Trình duyệt<br/>Next.js Web"]
+    LLM["LLM API bên ngoài<br/>(Internet, HTTPS)"]
+
+    subgraph DockerHost ["Docker Environment (máy chủ triển khai)"]
+        Nginx["Container: Nginx<br/>Cổng 80 / 443"]
+        subgraph Net ["Docker network: familyconnect-net"]
+            NextJS["Container: Next.js Web<br/>cổng nội bộ 3000"]
+            Spring1["Container: Spring Boot API #1<br/>cổng nội bộ 8080"]
+            Spring2["Container: Spring Boot API #2<br/>cổng nội bộ 8080"]
+            DB["Container: PostgreSQL + pgvector<br/>cổng 5432, không mở ra ngoài"]
+        end
+        Pgdata[("Volume: pgdata")]
+        Uploads[("Volume: uploads<br/>ảnh, tệp tải lên")]
+    end
+
+    Mobile -->|"HTTPS"| Nginx
+    Web -->|"HTTPS"| Nginx
+    Nginx -->|"/"| NextJS
+    Nginx -->|"/api/v1/*"| Spring1
+    Nginx -->|"/api/v1/*"| Spring2
+    Spring1 --> DB
+    Spring2 --> DB
+    Spring1 --> Uploads
+    Spring2 --> Uploads
+    Spring1 -->|"HTTPS"| LLM
+    Spring2 -->|"HTTPS"| LLM
+    DB --- Pgdata
+Loading
+Ghi chú ngay dưới sơ đồ: "Hiện chạy 1 bản backend; đích triển khai ở Sprint 7 (SCRUM-96) là 2 bản."
+## 4. Sơ đồ trình tự
+### 4.1 Đăng nhập JWT
 sequenceDiagram
-    autonumber
-    
-    actor User as Người dùng
-    participant Client as Web / Mobile
-    participant Nginx as Nginx
-    participant Filter as JwtAuthFilter
-    participant Ctrl as AiController
-    participant Gateway as AiGateway
-    participant DB as PostgreSQL pgvector
-    participant LLM as LLM API
-    participant Audit as AuditService
+    participant U as Người dùng
+    participant FE as Web/Mobile
+    participant BE as Spring Boot Backend
+    U->>FE: Nhập email, mật khẩu
+    FE->>BE: POST /api/v1/auth/login
+    note over BE: Xác thực thông tin người dùng
+    alt thông tin không hợp lệ
+        BE-->>FE: Response: ErrorResponse (AUTH_001)
+    else thông tin hợp lệ
+        note over BE: Ký Access Token & Refresh Token
+        BE-->>FE: access token + refresh token
+    end
 
-    User->>Client: Nhập câu hỏi
-    Client->>Nginx: POST /api/v1/ai/chat kèm Bearer token
-    Nginx->>Filter: chuyển tiếp
-    Filter->>Filter: kiểm tra chữ ký, hạn dùng, vai trò
+### 4.2 Hỏi chatbot AI
+sequenceDiagram
+    participant U as Người dùng
+    participant FE as Web/Mobile
+    participant Gateway as API Gateway (Spring Boot)
+    participant AiServ as AI Service Module
+    participant DB as PostgreSQL + pgvector
+    participant LLM as LLM API bên ngoài
+
+    U->>FE: Nhập câu hỏi, gửi
+    FE->>Gateway: POST /api/v1/ai/chat (ChatRequest, userId)
+
+    Gateway->>AiServ: ask(ChatRequest, userId)
     
-    alt token sai hoặc hết hạn
-        Filter-->>Client: 401 ProblemDetail
+    alt tài khoản chưa xác minh
+        Gateway-->>FE: 403 ErrorResponse (PERM_002)
+    else vượt giới hạn câu hỏi
+        Gateway-->>FE: 429 ErrorResponse (RATE_001)
     else hợp lệ
-        Filter->>Ctrl: request kèm Authentication
-        Ctrl->>Gateway: ask(ChatRequest, userId)
-        Gateway->>LLM: tạo embedding cho câu hỏi
-        LLM-->>Gateway: vector
-        Gateway->>DB: tìm top-k gần nhất, lọc theo quyền
-        DB-->>Gateway: các đoạn ngữ cảnh
-        Gateway->>LLM: prompt gồm chỉ dẫn hệ thống, ngữ cảnh, câu hỏi
-        
-        alt LLM lỗi hoặc quá hạn
-            LLM-->>Gateway: timeout
-            Gateway-->>Ctrl: fallback
-            Ctrl-->>Client: 503 ProblemDetail
-        else thành công
-            LLM-->>Gateway: câu trả lời
-            Gateway-->>Ctrl: ChatResponse gồm answer và citations
-            Gateway->>Audit: ghi AI_QUERY, không lưu prompt thô
-            Ctrl-->>Client: 200 ChatResponse
-        end
+        Gateway->>AiServ: tạo embedding cho câu hỏi
+        AiServ->>DB: tìm kiếm vector top-k (lọc theo family_id)
+        DB-->>AiServ: danh sách đoạn văn ngữ cảnh
+        AiServ->>AiServ: ghép ngữ cảnh + prompt hệ thống
+        AiServ->>+LLM: gửi prompt (HTTPS)
+        LLM-->>-AiServ: phản hồi từ LLM
+        AiServ->>AiServ: lưu lịch sử hội thoại vào bảng ai_chat_message
+        AiServ-->>Gateway: ChatResponse (bao gồm nguồn)
+        Gateway-->>FE: 200 OK (ChatResponse)
     end
-    
-    Client-->>User: Hiển thị câu trả lời
+## 5. Cấu trúc mã nguồn
 
-
-5. Cấu trúc mã nguồn & Thư mục dự án
-Hệ thống áp dụng kiến trúc phân rã theo chức năng (Feature-based structure) cho backend và cấu trúc phân lớp logic cho frontend/mobile nhằm tối ưu hóa khả năng mở rộng.
-Spring Boot Backend (Java)
+### Backend (Spring Boot)
+```text
 src/main/java/com/familyconnect/
-├── common/                 # Chứa mã dùng chung: config, exceptions, security (JWT filter), audit log
-└── modules/                # Chứa các gói nghiệp vụ độc lập
-    ├── auth/               # Mô-đun Xác thực
-    ├── directory/          # Mô-đun Danh bạ
-    └── ai/                 # Mô-đun AI Service
-        ├── controller/     # Tiếp nhận các HTTP Request và trả về HTTP Response.
-        ├── service/        # Nơi xử lý logic nghiệp vụ chính (gọi Spring AI, RAG, build prompt).
-        ├── repository/     # Chứa interface giao tiếp CSDL (PostgreSQL, pgvector).
-        ├── dto/            # Các class định nghĩa dữ liệu đầu vào (Request) và đầu ra (Response).
-        └── entity/         # Các class ánh xạ trực tiếp thành các bảng trong CSDL.
-
-
-Next.js Web Frontend
+├── common/                 # config, security (JWT filter), exception, audit, ErrorResponse
+└── modules/
+    ├── auth/               # đăng nhập, refresh token
+    ├── user/               # hồ sơ, vai trò
+    ├── admin/              # quản lý user, kiểm duyệt, audit, sao lưu, cấu hình
+    ├── genealogy/          # gia đình, chi họ, thành viên, quan hệ, cây
+    ├── community/          # bài đăng, bình luận, ảnh (media), thông báo
+    ├── events/             # sự kiện, RSVP, nhắc nhở
+    ├── heritage/           # tài liệu, câu chuyện, kho lưu trữ số
+    ├── directory/          # danh bạ, hồ sơ nghề nghiệp, học vấn
+    ├── dashboard/          # thống kê, báo cáo
+    └── ai/                 # tìm kiếm ngữ nghĩa, chatbot, giải thích, tóm tắt, gợi ý
+        └── (mỗi module đều có) controller/ service/ repository/ dto/ entity/
+### Frontend (Next.js)
 src/
-├── app/          # Chứa cấu trúc định tuyến (Routing) theo App Router.
-├── components/   # Chứa các UI Component độc lập tái sử dụng (Header, Sidebar, CustomButton).
-├── lib/          # Chứa tiện ích (utilities) và cấu hình dùng chung (Axios instance, format date).
-└── services/     # Lớp trung gian gọi API từ Spring Boot (auth.service.ts, ai.service.ts).
-
-
-Mobile App (React Native/Expo)
+├── app/          # Chứa cấu trúc định tuyến (Routing - App Router).
+├── components/   # Chứa các UI Component độc lập, tái sử dụng (Header, Sidebar...).
+├── lib/          # Chứa các tiện ích và cấu hình dùng chung toàn dự án.
+└── services/     # Lớp trung gian gọi API từ Spring Boot. Dùng kiểu dữ liệu sinh từ OpenAPI.
+### Mobile (Expo)
 src/
-├── navigation/   # File cấu hình luồng chuyển trang (Stack Navigator, Bottom Tab Navigator).
-├── screens/      # Các file giao diện toàn màn hình (HomeScreen, ChatAiScreen).
-├── components/   # UI Components dùng chung cho thiết bị di động.
-└── services/     # Lớp gọi API HTTP (Đồng bộ logic và DTO hoàn toàn với thư mục 'services' của Web).
+├── navigation/   # Chứa các file cấu hình luồng chuyển trang (React Navigation).
+├── screens/      # Chứa các file giao diện toàn màn hình (HomeScreen, ChatAiScreen...).
+├── components/   # Chứa các thành phần UI dùng chung (Card, ListItem...).
+└── services/     # Dùng chung hợp đồng API: kiểu dữ liệu sinh từ file OpenAPI (docs/04-api/openapi/), không viết tay hai nơi.
 
-
-6. Đáp ứng các yêu cầu phi chức năng (NFRs)
+## 6. Đáp ứng yêu cầu phi chức năng (NFR)
 Hệ thống được thiết kế không chỉ để giải quyết các luồng nghiệp vụ mà còn đảm bảo nền tảng kỹ thuật vững chắc thông qua việc tuân thủ 5 yêu cầu phi chức năng cốt lõi sau:
-6.1. Kiến trúc mô-đun (Modular Architecture)
-Cách đáp ứng: Mã nguồn Spring Boot không chia theo các lớp ngang truyền thống (gom tất cả controller vào một chỗ) mà được chia dọc thành các gói (package) độc lập theo từng miền nghiệp vụ (Ví dụ: auth, heritage, ai, directory).
-Giá trị mang lại: Giảm thiểu sự phụ thuộc chéo (loose coupling). Khi một tính năng bị lỗi, nó sẽ được khoanh vùng trong mô-đun đó mà không làm sập toàn bộ hệ thống. Kiến trúc này cũng là bước đệm hoàn hảo để dễ dàng bóc tách một mô-đun (như AI Service) thành Microservice độc lập trong tương lai.
-6.2. Chuẩn giao tiếp RESTful
-Cách đáp ứng: Mọi giao tiếp giữa lớp Client (Web/Mobile) và Server đều tuân thủ nghiêm ngặt nguyên tắc REST. Sử dụng định dạng dữ liệu chuẩn JSON, định nghĩa các URL hướng tài nguyên (ví dụ: /api/v1/auth/login, /api/v1/ai/chat) và tuân thủ các phương thức HTTP (GET, POST, PUT, DELETE).
-Giá trị mang lại: Đảm bảo Web Next.js và Mobile App có thể gọi chung 100% một bộ API duy nhất. Trả về đúng các mã trạng thái HTTP chuẩn xác để Client dễ dàng xử lý (VD: 200 OK cho thành công, 401 Unauthorized khi sai token, 503 Service Unavailable khi API bên ngoài bị lỗi).
-6.3. Xác thực phi trạng thái (JWT - JSON Web Token)
-Cách đáp ứng: Hệ thống không lưu trữ phiên đăng nhập (session) trên RAM của máy chủ. Thay vào đó, sau khi xác thực thành công, máy chủ cấp phát một JWT (gồm Access Token và Refresh Token). Client sẽ đính kèm token này vào header Authorization: Bearer trong mọi request tiếp theo.
-Giá trị mang lại: Kiến trúc stateless (phi trạng thái) giúp tiết kiệm bộ nhớ cho server. Đồng thời, nó cho phép hệ thống dễ dàng mở rộng chiều ngang (Scale-out) – có thể chạy 2, 3 container Spring Boot cùng lúc phía sau Nginx mà không cần lo lắng về việc đồng bộ session giữa các máy chủ.
-6.4. Tính sẵn sàng cao cơ bản (Basic High Availability)
-Cách đáp ứng: Toàn bộ hệ thống được đóng gói thành các container độc lập qua Docker.
-Sử dụng Nginx làm API Gateway kiêm Load Balancer, sẵn sàng phân phối lưu lượng tải nếu dự án chạy nhiều bản sao backend.
-Thiết lập chính sách tự động phục hồi (restart: always hoặc unless-stopped trong Docker) giúp container tự động khởi động lại nếu tiến trình bị treo hoặc sập.
-Dữ liệu của PostgreSQL được ánh xạ ra ngoài ổ cứng vật lý (Docker Volume), đảm bảo dữ liệu không bị mất ngay cả khi container cơ sở dữ liệu bị xóa.
-6.5. Kiểm vết và Lưu vết hệ thống (Audit Logging)
-Cách đáp ứng: Hệ thống tích hợp một AuditService hoạt động ngầm (như đã thiết kế trong sơ đồ trình tự).
-Ghi log nghiệp vụ: Ghi nhận tự động các sự kiện bảo mật quan trọng như LOGIN_SUCCESS, LOGIN_FAILED, hay AI_QUERY.
-Truy xuất nguồn gốc dữ liệu: Các Entity trong CSDL kế thừa một lớp cơ sở (Auditable) để tự động điền các trường created_by, updated_at, created_date mỗi khi có thao tác thêm/sửa/xóa trên các tài liệu gia phả.
-Bảo mật log: Đảm bảo tuân thủ nguyên tắc an toàn thông tin: Tuyệt đối không ghi log mật khẩu thô của người dùng và không lưu trữ các prompt thô (chứa dữ liệu cá nhân nhạy cảm) khi gọi LLM API.
+
+### 6.1. Kiến trúc mô-đun (Modular Architecture)
+* **Cách đáp ứng:** Mã nguồn Spring Boot được chia dọc thành 10 gói (package) độc lập theo từng miền nghiệp vụ như đã liệt kê ở Mục 5.
+* **Giá trị mang lại:** Giảm thiểu sự phụ thuộc chéo (loose coupling). Khi một tính năng bị lỗi, nó sẽ được khoanh vùng trong mô-đun đó mà không làm sập toàn bộ hệ thống. Đây là bước đệm hoàn hảo để bóc tách thành Microservices.
+
+### 6.2. Chuẩn giao tiếp RESTful
+* **Cách đáp ứng:** Mọi giao tiếp giữa lớp Client (Web/Mobile) và Server đều tuân thủ nguyên tắc REST. Lỗi API được trả về đồng nhất theo quy chuẩn `docs/04-api/conventions.md` với định dạng `{success:false, error:{code,message,details}}`.
+* **Giá trị mang lại:** Đảm bảo Web Next.js và Mobile App có thể gọi chung 100% một bộ API duy nhất và xử lý lỗi đồng bộ.
+
+### 6.3. Xác thực phi trạng thái (JWT - JSON Web Token)
+* **Cách đáp ứng:** Hệ thống không lưu trữ phiên đăng nhập (session) trên RAM. Máy chủ cấp phát JWT (Access/Refresh Token). Client đính kèm token vào header `Authorization: Bearer` (Web lưu cookie httpOnly, Mobile lưu expo-secure-store).
+* **Giá trị mang lại:** Giúp tiết kiệm bộ nhớ cho server và cho phép hệ thống dễ dàng mở rộng chiều ngang (Scale-out) phía sau Nginx.
+
+### 6.4. Tính sẵn sàng cao cơ bản (Basic High Availability)
+* **Cách đáp ứng:** Toàn bộ hệ thống được đóng gói thành container độc lập. Sử dụng Nginx làm API Gateway kiêm Load Balancer (Mục tiêu Sprint 7 - SCRUM-96 là 2 bản Spring Boot sau Nginx; hiện chạy 1 bản). Thiết lập chính sách `restart: always` và dùng Docker Volume (`pgdata`, `uploads`) để mount dữ liệu ra ngoài.
+* **Giá trị mang lại:** Sẵn sàng phân phối lưu lượng tải, tự động phục hồi khi tiến trình sập và đảm bảo an toàn dữ liệu cứng.
+
+### 6.5. Kiểm vết và Lưu vết hệ thống (Audit Logging)
+* **Ghi log nghiệp vụ:** Hệ thống tích hợp một `AuditService` hoạt động ngầm để ghi nhận các sự kiện bảo mật quan trọng (ai, làm gì, lúc nào).
+* **Truy xuất nguồn gốc:** Cột chuẩn cho các bảng nghiệp vụ: `id`, `created_at`, `updated_at`, `deleted_at`, thêm `created_by`, `updated_by`. (Tuyệt đối không dùng `created_date`).
+* **Bảo mật log:** Audit log chỉ ghi sự kiện, tuyệt đối không chứa nội dung prompt thô. Lịch sử hội thoại vẫn được lưu riêng ở bảng `ai_chat_message` theo đúng thời hạn trong `privacy.md`.
+
+## 7. Quyết định kiến trúc đã chốt (bắt buộc áp dụng)
+
+| # | Quyết định | Lý do | Ai phải áp dụng |
+|---|---|---|---|
+| 1 | Một schema `public`. Bảng AI có tiền tố `ai_`: `ai_embedding_chunk`, `ai_chat_session`, `ai_chat_message`, `ai_summary_cache`. Chỉ module `ai` đọc, ghi các bảng này; module khác không join. Khi tách service: một migration chuyển `ai_*` sang schema `ai` và cấp tài khoản DB riêng | Đơn giản trong 8 tuần, vẫn sẵn sàng tách sau | Trí (ERD), Lê Nhựt (AI) |
+| 2 | Web và mobile đều dùng thư mục `services/` để gọi API. Kiểu dữ liệu sinh từ OpenAPI (`docs/04-api/openapi/`), không viết tay hai nơi | Một hợp đồng API duy nhất | Lê Nhựt (mobile), Huy Quốc (web) |
+| 3 | Module gọi nhau qua interface Java khi còn một khối. REST nội bộ chỉ dùng khi tách service | Nhanh, dễ test | Tất cả backend |
+| 4 | Cột chuẩn: `id`, `created_at`, `updated_at`, `deleted_at`, thêm `created_by`, `updated_by` cho bảng nghiệp vụ. Không dùng `created_date` | Khớp ERD | Trí, tất cả backend |
+| 5 | Backend gồm `common/` và `modules/<tên>/{controller,service,repository,dto,entity}`. Tên module cố định: `auth`, `user`, `admin`, `genealogy`, `community`, `events`, `heritage`, `directory`, `dashboard`, `ai`. `SecurityConfig` chuyển vào `common/config` | Một cấu trúc cho mọi người | Tất cả backend, Tuấn (SCRUM-35) |
+| 6 | Lỗi trả về theo `docs/04-api/conventions.md` (`success:false, error:{code,message,details}`) | Một chuẩn lỗi cho web và mobile | Tất cả backend |
+| 7 | AI: tài khoản chưa xác minh không dùng được (403, `PERM_002`); giới hạn số câu hỏi (429, `RATE_001`); lọc theo `family_id` trước khi tạo ngữ cảnh | Theo `docs/01-srs/privacy.md` | Lê Nhựt |
+| 8 | Mục tiêu triển khai: 2 bản Spring Boot sau Nginx (Sprint 7, SCRUM-96); hiện chạy 1 bản | Đáp ứng NFR-10 | Huy Quốc (Docker) |
