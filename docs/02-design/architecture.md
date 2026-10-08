@@ -4,7 +4,7 @@
 
 ## 1. Sơ đồ thành phần
 > Thể hiện đúng kiến trúc đề tài: **Web Management Portal**, **Mobile Application**, **AI Service Layer** kết nối qua **RESTful API**. Các khối logic trong Spring Boot backend và cách xử lý lỗi tập trung.
-
+![Sơ đồ thành phần](../images/architecture-component.drawio.png)
 ```mermaid
 graph TD
     %% Tầng Frontend
@@ -71,7 +71,7 @@ Nhờ tuân thủ nguyên lý thiết kế module hóa từ đầu, quá trình 
 * **Định tuyến tại API Gateway (Nginx):** Chỉ cần cập nhật cấu hình của Nginx Load Balancer để `proxy_pass` thẳng sang máy chủ AI Service mới. Web và Mobile hoàn toàn không phải sửa đổi code gọi API.
 * **Phân lập cơ sở dữ liệu:** Các bảng có tiền tố `ai_` trong schema public (như `ai_embedding_chunk`, `ai_chat_session`...) có thể chuyển sang schema `ai` riêng bằng một migration khi tách service, và cấp tài khoản DB độc lập chỉ có quyền read-only trên dữ liệu Core.
 ## 3. Sơ đồ triển khai Docker
-
+![Sơ đồ triển khai](../images/architecture-deployment.drawio.png)
 ```mermaid
 graph TD
     Mobile["Mobile App<br/>React Native / Expo"]
@@ -107,6 +107,7 @@ graph TD
 Ghi chú ngay dưới sơ đồ: "Hiện chạy 1 bản backend; đích triển khai ở Sprint 7 (SCRUM-96) là 2 bản."
 ## 4. Sơ đồ trình tự
 ### 4.1 Đăng nhập JWT
+![Sơ đồ đăng nhập](../images/architecture-sequence-login.drawio.png)
 ```mermaid
 sequenceDiagram
     autonumber
@@ -155,6 +156,7 @@ sequenceDiagram
     end
 ```
 ### 4.2 Hỏi chatbot AI
+![Sơ đồ chatbot](../images/architecture-sequence-chat.drawio.png)
 ```mermaid
 sequenceDiagram
     autonumber
