@@ -4,7 +4,9 @@
 
 ## 1. Sơ đồ thành phần
 > Thể hiện đúng kiến trúc đề tài: **Web Management Portal**, **Mobile Application**, **AI Service Layer** kết nối qua **RESTful API**. Các khối logic trong Spring Boot backend và cách xử lý lỗi tập trung.
+
 ![Sơ đồ thành phần](../images/architecture-component.drawio.png)
+
 ```mermaid
 graph TD
     %% Tầng Frontend
@@ -47,8 +49,8 @@ graph TD
     class Common,Auth,UserAdmin,Genealogy,CommEvents,HeritageDir,Dashboard backend;
     class AiLayer aiclass;
     class DB dbclass;
-
 ```
+
 ## 2. Quyết định thiết kế lớp AI Service
 ### 2.1. Quyết định kiến trúc
 Lớp AI Service được quyết định tích hợp trực tiếp bên trong kiến trúc nguyên khối (Modular Monolith) của Spring Boot hiện tại, sử dụng thư viện Spring AI.
@@ -70,8 +72,10 @@ Nhờ tuân thủ nguyên lý thiết kế module hóa từ đầu, quá trình 
 * **Tách rời mã nguồn (Decoupling):** Bóc tách toàn bộ package AI hiện tại sang một dự án hoàn toàn mới (có thể viết lại bằng Python/FastAPI hoặc bản Spring Boot nhẹ).
 * **Định tuyến tại API Gateway (Nginx):** Chỉ cần cập nhật cấu hình của Nginx Load Balancer để `proxy_pass` thẳng sang máy chủ AI Service mới. Web và Mobile hoàn toàn không phải sửa đổi code gọi API.
 * **Phân lập cơ sở dữ liệu:** Các bảng có tiền tố `ai_` trong schema public (như `ai_embedding_chunk`, `ai_chat_session`...) có thể chuyển sang schema `ai` riêng bằng một migration khi tách service, và cấp tài khoản DB độc lập chỉ có quyền read-only trên dữ liệu Core.
+
 ## 3. Sơ đồ triển khai Docker
 ![Sơ đồ triển khai](../images/architecture-deployment.drawio.png)
+
 ```mermaid
 graph TD
     Mobile["Mobile App<br/>React Native / Expo"]
@@ -104,10 +108,12 @@ graph TD
     DB --- Pgdata
 ```
 
-Ghi chú ngay dưới sơ đồ: "Hiện chạy 1 bản backend; đích triển khai ở Sprint 7 (SCRUM-96) là 2 bản."
+> Ghi chú: Hiện chạy 1 bản backend; đích triển khai ở Sprint 7 (SCRUM-96) là 2 bản.
+
 ## 4. Sơ đồ trình tự
 ### 4.1 Đăng nhập JWT
 ![Sơ đồ đăng nhập](../images/architecture-sequence-login.drawio.png)
+
 ```mermaid
 sequenceDiagram
     autonumber
@@ -148,15 +154,17 @@ sequenceDiagram
         AuthC-->>App: 200 TokenResponse
 
         App->>App: lưu token
-        Note over App: Web: cookie httpOnly<br/>Mobile: expo-secure-store
+        Note over App: Web: localStorage<br/>Mobile: expo-secure-store
 
         rect rgb(255, 255, 204)
         Note over App: Các request sau gửi<br/>header Authorization Bearer
         end
     end
 ```
+
 ### 4.2 Hỏi chatbot AI
 ![Sơ đồ chatbot](../images/architecture-sequence-chat.drawio.png)
+
 ```mermaid
 sequenceDiagram
     autonumber
@@ -194,7 +202,7 @@ sequenceDiagram
             LL-->>GW: vector
             GW->>DB: tìm top-k gần nhất, lọc theo family_id và quyền xem
             DB-->>GW: các đoạn ngữ cảnh
-            GW->>GW: lọc trường được phép gửi (privacy.md mục 8)
+            GW->>GW: lọc trường được phép gửi (privacy.md, phần Dữ liệu gửi cho AI)
             GW->>LL: prompt gồm chỉ dẫn hệ thống, ngữ cảnh, câu hỏi
             
             alt LLM lỗi hoặc quá hạn
@@ -213,6 +221,7 @@ sequenceDiagram
     end
     FE-->>U: Hiển thị câu trả lời
 ```
+
 ## 5. Cấu trúc mã nguồn
 
 ### Backend (Spring Boot)
@@ -232,6 +241,8 @@ src/main/java/com/familyconnect/
     └── ai/                 # tìm kiếm ngữ nghĩa, chatbot, giải thích, tóm tắt, gợi ý
         └── (mỗi module đều có) controller/ service/ repository/ dto/ entity/
 ```
+> Hiện repo có `config/SecurityConfig`; sẽ chuyển vào `common/config` khi làm Auth (SCRUM-35).
+
 ### Frontend (Next.js)
 ```text
 src/
@@ -240,6 +251,7 @@ src/
 ├── lib/          # Chứa các tiện ích và cấu hình dùng chung toàn dự án.
 └── services/     # Lớp trung gian gọi API từ Spring Boot. Dùng kiểu dữ liệu sinh từ OpenAPI.
 ```
+
 ### Mobile (Expo)
 ```text
 src/
@@ -248,6 +260,7 @@ src/
 ├── components/   # Chứa các thành phần UI dùng chung (Card, ListItem...).
 └── services/     # Dùng chung hợp đồng API: kiểu dữ liệu sinh từ file OpenAPI (docs/04-api/openapi/), không viết tay hai nơi.
 ```
+
 ## 6. Đáp ứng yêu cầu phi chức năng (NFR)
 Hệ thống được thiết kế không chỉ để giải quyết các luồng nghiệp vụ mà còn đảm bảo nền tảng kỹ thuật vững chắc thông qua việc tuân thủ 5 yêu cầu phi chức năng cốt lõi sau:
 
@@ -260,11 +273,11 @@ Hệ thống được thiết kế không chỉ để giải quyết các luồn
 * **Giá trị mang lại:** Đảm bảo Web Next.js và Mobile App có thể gọi chung 100% một bộ API duy nhất và xử lý lỗi đồng bộ.
 
 ### 6.3. Xác thực phi trạng thái (JWT - JSON Web Token)
-* **Cách đáp ứng:** Hệ thống không lưu trữ phiên đăng nhập (session) trên RAM. Máy chủ cấp phát JWT (Access/Refresh Token). Client đính kèm token vào header `Authorization: Bearer` (Web lưu cookie httpOnly, Mobile lưu expo-secure-store).
+* **Cách đáp ứng:** Hệ thống không lưu trữ phiên đăng nhập (session) trên RAM. Máy chủ cấp phát JWT (Access/Refresh Token). Client đính kèm token vào header `Authorization: Bearer` (Web lưu localStorage, Mobile lưu expo-secure-store).
 * **Giá trị mang lại:** Giúp tiết kiệm bộ nhớ cho server và cho phép hệ thống dễ dàng mở rộng chiều ngang (Scale-out) phía sau Nginx.
 
 ### 6.4. Tính sẵn sàng cao cơ bản (Basic High Availability)
-* **Cách đáp ứng:** Toàn bộ hệ thống được đóng gói thành container độc lập. Sử dụng Nginx làm API Gateway kiêm Load Balancer (Mục tiêu Sprint 7 - SCRUM-96 là 2 bản Spring Boot sau Nginx; hiện chạy 1 bản). Thiết lập chính sách `restart: always` và dùng Docker Volume (`pgdata`, `uploads`) để mount dữ liệu ra ngoài.
+* **Cách đáp ứng:** Toàn bộ hệ thống được đóng gói thành container độc lập. Sử dụng Nginx làm API Gateway kiêm Load Balancer (Mục tiêu Sprint 7 - SCRUM-96 là 2 bản Spring Boot sau Nginx; hiện chạy 1 bản). Thiết lập chính sách `restart: unless-stopped` và dùng Docker Volume (`pgdata`, `uploads`) để mount dữ liệu ra ngoài.
 * **Giá trị mang lại:** Sẵn sàng phân phối lưu lượng tải, tự động phục hồi khi tiến trình sập và đảm bảo an toàn dữ liệu cứng.
 
 ### 6.5. Kiểm vết và Lưu vết hệ thống (Audit Logging)
