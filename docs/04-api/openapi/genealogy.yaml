@@ -1,32 +1,621 @@
-# Người viết: TV2. Theo quy ước ở ../conventions.md
 openapi: 3.0.3
 info:
-  title: FamilyConnect - Gia phả
+  title: FamilyConnect - Genealogy API
   version: 0.1.0
+  description: >
+    API module Gia phả (SCRUM-18). Người viết: TV2. Cấu trúc response và mã lỗi
+    cần đối chiếu lại với docs/04-api/conventions.md (SCRUM-21) khi quy ước chung được duyệt.
 servers:
   - url: /api/v1
-paths: {}
-# Mẫu một endpoint (xóa dấu # và chỉnh lại):
-# paths:
-#   /auth/login:
-#     post:
-#       summary: Đăng nhập
-#       security: []
-#       requestBody:
-#         required: true
-#         content:
-#           application/json:
-#             schema:
-#               type: object
-#               properties:
-#                 email: { type: string }
-#                 password: { type: string }
-#       responses:
-#         '200': { description: Thành công (access token, refresh token) }
-#         '401': { description: AUTH_001 sai email hoặc mật khẩu }
+security:
+  - bearerAuth: []
+tags:
+  - name: Family
+  - name: Branch
+  - name: Person
+  - name: Relationship
+  - name: Tree
+
+paths:
+  /families:
+    post:
+      tags: [Family]
+      summary: Tạo gia đình (UC-GEN-01)
+      description: "Quyền: người đã đăng nhập. Người tạo trở thành BRANCH_ADMIN của gia đình."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/FamilyInput' }
+            example: { name: "Dòng họ Nguyễn", description: "Dòng họ Nguyễn ở Quảng Nam" }
+      responses:
+        '201':
+          description: Đã tạo
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Family' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /families/{familyId}:
+    parameters:
+      - $ref: '#/components/parameters/FamilyId'
+    get:
+      tags: [Family]
+      summary: Xem gia đình
+      description: "Quyền: MEMBER đã xác minh, BRANCH_ADMIN, SYSTEM_ADMIN."
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Family' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    put:
+      tags: [Family]
+      summary: Sửa gia đình
+      description: "Quyền: BRANCH_ADMIN, SYSTEM_ADMIN."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/FamilyInput' }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Family' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    delete:
+      tags: [Family]
+      summary: Xóa mềm gia đình
+      description: "Quyền: SYSTEM_ADMIN. Chỉ xóa khi không còn thành viên (lỗi FAMILY_NOT_EMPTY)."
+      responses:
+        '204': { description: Đã xóa }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+
+  /families/{familyId}/branches:
+    parameters:
+      - $ref: '#/components/parameters/FamilyId'
+    get:
+      tags: [Branch]
+      summary: Danh sách chi họ
+      description: "Quyền: MEMBER đã xác minh trở lên."
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Branch' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    post:
+      tags: [Branch]
+      summary: Tạo chi họ (UC-GEN-02)
+      description: "Quyền: BRANCH_ADMIN, SYSTEM_ADMIN."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/BranchInput' }
+            example: { name: "Chi 2", parentBranchId: null, originPersonId: "0b6c7a1e-2f5d-4b0a-9a53-2d7f2c1c9e11" }
+      responses:
+        '201':
+          description: Đã tạo
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Branch' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { $ref: '#/components/responses/Conflict' }
+
+  /branches/{branchId}:
+    parameters:
+      - name: branchId
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+    put:
+      tags: [Branch]
+      summary: Sửa chi họ
+      description: "Quyền: BRANCH_ADMIN, SYSTEM_ADMIN. Lỗi BRANCH_CYCLE nếu chi cha tạo vòng."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/BranchInput' }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Branch' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+    delete:
+      tags: [Branch]
+      summary: Xóa mềm chi họ
+      description: "Quyền: BRANCH_ADMIN, SYSTEM_ADMIN. Lỗi BRANCH_NOT_EMPTY nếu còn thành viên hoặc chi con."
+      responses:
+        '204': { description: Đã xóa }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+
+  /families/{familyId}/persons:
+    parameters:
+      - $ref: '#/components/parameters/FamilyId'
+    get:
+      tags: [Person]
+      summary: Danh sách thành viên
+      description: "Quyền: MEMBER đã xác minh trở lên. Hỗ trợ phân trang và lọc."
+      parameters:
+        - { name: page, in: query, schema: { type: integer, minimum: 0, default: 0 } }
+        - { name: size, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 20 } }
+        - { name: q, in: query, description: Tìm theo họ tên, schema: { type: string } }
+        - { name: branchId, in: query, schema: { type: string, format: uuid } }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PersonPage' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    post:
+      tags: [Person]
+      summary: Thêm thành viên (UC-GEN-03)
+      description: "Quyền: BRANCH_ADMIN, SYSTEM_ADMIN."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/PersonInput' }
+            example:
+              fullName: "Nguyễn Văn An"
+              gender: MALE
+              birthDate: "1975-04-12"
+              birthplace: "Quảng Nam"
+              currentLocation: "TP. Hồ Chí Minh"
+              isDeceased: false
+              branchId: "3f1c2a9d-0b7e-4c62-9d1a-6b0f8e5a7c10"
+      responses:
+        '201':
+          description: Đã tạo
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Person' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /persons/{personId}:
+    parameters:
+      - $ref: '#/components/parameters/PersonId'
+    get:
+      tags: [Person]
+      summary: Xem hồ sơ thành viên
+      description: "Quyền: MEMBER đã xác minh trở lên. Trường nhạy cảm bị ẩn theo vai trò, trẻ em và người đã mất."
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Person' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    put:
+      tags: [Person]
+      summary: Sửa thành viên
+      description: "Quyền: BRANCH_ADMIN, SYSTEM_ADMIN. Đánh dấu đã mất sẽ chuyển hôn nhân MARRIED thành WIDOWED."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/PersonInput' }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Person' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    delete:
+      tags: [Person]
+      summary: Xóa mềm thành viên
+      description: "Quyền: BRANCH_ADMIN, SYSTEM_ADMIN. Lỗi PERSON_HAS_RELATIONSHIPS nếu còn quan hệ."
+      responses:
+        '204': { description: Đã xóa }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+
+  /persons/{personId}/parents:
+    parameters:
+      - $ref: '#/components/parameters/PersonId'
+    post:
+      tags: [Relationship]
+      summary: Thêm cha/mẹ cho thành viên (UC-GEN-04)
+      description: |
+        Quyền: BRANCH_ADMIN, SYSTEM_ADMIN. `personId` là người con.
+        Lỗi nghiệp vụ (409/422): PARENT_LIMIT_EXCEEDED, ANCESTOR_CYCLE,
+        INVALID_BIRTH_ORDER, RELATION_EXISTS.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ParentChildInput' }
+            example:
+              parentId: "7a9d4e12-5c3b-4f68-8e0d-1b2c3d4e5f60"
+              parentRole: FATHER
+              kind: BIOLOGICAL
+      responses:
+        '201':
+          description: Đã tạo
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ParentChild' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '422':
+          description: Vi phạm quy tắc nghiệp vụ (INVALID_BIRTH_ORDER, ANCESTOR_CYCLE)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              example: { code: ANCESTOR_CYCLE, message: "Không thể thêm quan hệ vì tạo vòng lặp tổ tiên" }
+
+  /parent-child/{id}:
+    delete:
+      tags: [Relationship]
+      summary: Gỡ quan hệ cha-mẹ-con
+      description: "Quyền: BRANCH_ADMIN, SYSTEM_ADMIN."
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '204': { description: Đã gỡ }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /marriages:
+    post:
+      tags: [Relationship]
+      summary: Thêm hôn nhân (UC-GEN-05)
+      description: |
+        Quyền: BRANCH_ADMIN, SYSTEM_ADMIN.
+        Lỗi: ALREADY_MARRIED, MARRIAGE_NOT_ALLOWED, PERSON_DECEASED.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/MarriageInput' }
+            example:
+              person1Id: "7a9d4e12-5c3b-4f68-8e0d-1b2c3d4e5f60"
+              person2Id: "c1d2e3f4-a5b6-4789-90ab-cdef01234567"
+              startDate: "2000-02-10"
+      responses:
+        '201':
+          description: Đã tạo
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Marriage' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { $ref: '#/components/responses/Conflict' }
+
+  /marriages/{id}:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+    put:
+      tags: [Relationship]
+      summary: Đổi trạng thái hôn nhân (ly hôn, góa)
+      description: "Quyền: BRANCH_ADMIN, SYSTEM_ADMIN."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/MarriageStatusInput' }
+            example: { status: DIVORCED, endDate: "2015-06-01" }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Marriage' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    delete:
+      tags: [Relationship]
+      summary: Xóa hôn nhân (nhập nhầm)
+      description: "Quyền: BRANCH_ADMIN, SYSTEM_ADMIN."
+      responses:
+        '204': { description: Đã xóa }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /families/{familyId}/tree:
+    parameters:
+      - $ref: '#/components/parameters/FamilyId'
+    get:
+      tags: [Tree]
+      summary: Lấy cây gia phả dạng nodes và edges (UC-GEN-06)
+      description: |
+        Quyền: MEMBER đã xác minh trở lên. Trả về nút và cạnh để frontend vẽ bằng React Flow.
+        Tải theo yêu cầu: truyền `rootId` và `depth`; mở thêm nhánh thì gọi lại với rootId mới.
+      parameters:
+        - { name: rootId, in: query, required: true, description: Người gốc, schema: { type: string, format: uuid } }
+        - { name: depth, in: query, description: Số đời lấy xuống và lên, schema: { type: integer, minimum: 1, maximum: 6, default: 3 } }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TreeResponse' }
+              example:
+                rootId: "7a9d4e12-5c3b-4f68-8e0d-1b2c3d4e5f60"
+                nodes:
+                  - { id: "7a9d4e12-5c3b-4f68-8e0d-1b2c3d4e5f60", fullName: "Nguyễn Văn An", gender: MALE, birthYear: 1975, isDeceased: false, branchId: "3f1c2a9d-0b7e-4c62-9d1a-6b0f8e5a7c10", hasMoreAncestors: true, hasMoreDescendants: true }
+                  - { id: "c1d2e3f4-a5b6-4789-90ab-cdef01234567", fullName: "Trần Thị Lan", gender: FEMALE, birthYear: 1978, isDeceased: false, branchId: null, hasMoreAncestors: false, hasMoreDescendants: false }
+                  - { id: "e5f60718-293a-4b5c-8d7e-9f0a1b2c3d4e", fullName: "Nguyễn Minh Khoa", gender: MALE, birthYear: 2003, isDeceased: false, branchId: "3f1c2a9d-0b7e-4c62-9d1a-6b0f8e5a7c10", hasMoreAncestors: false, hasMoreDescendants: false }
+                edges:
+                  - { id: "p1", type: PARENT_CHILD, source: "7a9d4e12-5c3b-4f68-8e0d-1b2c3d4e5f60", target: "e5f60718-293a-4b5c-8d7e-9f0a1b2c3d4e", kind: BIOLOGICAL }
+                  - { id: "p2", type: PARENT_CHILD, source: "c1d2e3f4-a5b6-4789-90ab-cdef01234567", target: "e5f60718-293a-4b5c-8d7e-9f0a1b2c3d4e", kind: BIOLOGICAL }
+                  - { id: "m1", type: MARRIAGE, source: "7a9d4e12-5c3b-4f68-8e0d-1b2c3d4e5f60", target: "c1d2e3f4-a5b6-4789-90ab-cdef01234567", status: MARRIED }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /families/{familyId}/relationship:
+    parameters:
+      - $ref: '#/components/parameters/FamilyId'
+    get:
+      tags: [Relationship]
+      summary: Truy vấn "A là gì của B" (UC-GEN-07, UC-GEN-08)
+      description: |
+        Quyền: MEMBER đã xác minh trở lên. Trả về tên quan hệ tiếng Việt, tổ tiên chung
+        và đường đi để frontend hiển thị trực quan quan hệ trên cây.
+        Thuật toán: docs/02-design/algorithm-relationship.md.
+      parameters:
+        - { name: personA, in: query, required: true, schema: { type: string, format: uuid } }
+        - { name: personB, in: query, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RelationshipResult' }
+              example:
+                personA: "7a9d4e12-5c3b-4f68-8e0d-1b2c3d4e5f60"
+                personB: "e5f60718-293a-4b5c-8d7e-9f0a1b2c3d4e"
+                supported: true
+                relation: "cha"
+                description: "Nguyễn Văn An là cha của Nguyễn Minh Khoa"
+                commonAncestorId: "7a9d4e12-5c3b-4f68-8e0d-1b2c3d4e5f60"
+                stepsFromA: 0
+                stepsFromB: 1
+                pathPersonIds: ["7a9d4e12-5c3b-4f68-8e0d-1b2c3d4e5f60", "e5f60718-293a-4b5c-8d7e-9f0a1b2c3d4e"]
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404':
+          description: Không tìm thấy người hoặc không có quan hệ (NO_RELATION)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              example: { code: NO_RELATION, message: "Không có quan hệ huyết thống trong dữ liệu hiện có" }
+
 components:
   securitySchemes:
     bearerAuth:
       type: http
       scheme: bearer
       bearerFormat: JWT
+
+  parameters:
+    FamilyId:
+      name: familyId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    PersonId:
+      name: personId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+
+  responses:
+    ValidationError:
+      description: Dữ liệu không hợp lệ (VALIDATION_ERROR)
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+          example: { code: VALIDATION_ERROR, message: "Họ tên không được để trống" }
+    Unauthorized:
+      description: Chưa đăng nhập hoặc token hết hạn (AUTH_002)
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+          example: { code: AUTH_002, message: "Token không hợp lệ hoặc đã hết hạn" }
+    Forbidden:
+      description: Không đủ quyền (PERM_001) hoặc chưa được xác minh
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+          example: { code: PERM_001, message: "Bạn không có quyền thực hiện thao tác này" }
+    NotFound:
+      description: Không tìm thấy
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+          example: { code: NOT_FOUND, message: "Không tìm thấy đối tượng" }
+    Conflict:
+      description: Vi phạm quy tắc nghiệp vụ (ví dụ PARENT_LIMIT_EXCEEDED, ALREADY_MARRIED, RELATION_EXISTS, PERSON_HAS_RELATIONSHIPS, FAMILY_NOT_EMPTY, BRANCH_NOT_EMPTY, BRANCH_CYCLE)
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+          example: { code: PARENT_LIMIT_EXCEEDED, message: "Người này đã có đủ cha và mẹ ruột" }
+
+  schemas:
+    Error:
+      type: object
+      required: [code, message]
+      properties:
+        code: { type: string }
+        message: { type: string }
+
+    FamilyInput:
+      type: object
+      required: [name]
+      properties:
+        name: { type: string, maxLength: 150 }
+        description: { type: string }
+    Family:
+      allOf:
+        - $ref: '#/components/schemas/FamilyInput'
+        - type: object
+          properties:
+            id: { type: string, format: uuid }
+            createdBy: { type: string, format: uuid }
+            createdAt: { type: string, format: date-time }
+
+    BranchInput:
+      type: object
+      required: [name]
+      properties:
+        name: { type: string, maxLength: 150 }
+        parentBranchId: { type: string, format: uuid, nullable: true }
+        originPersonId: { type: string, format: uuid, nullable: true }
+        description: { type: string }
+    Branch:
+      allOf:
+        - $ref: '#/components/schemas/BranchInput'
+        - type: object
+          properties:
+            id: { type: string, format: uuid }
+            familyId: { type: string, format: uuid }
+
+    Gender:
+      type: string
+      enum: [MALE, FEMALE, OTHER]
+    PersonInput:
+      type: object
+      required: [fullName, gender]
+      properties:
+        fullName: { type: string, maxLength: 150 }
+        gender: { $ref: '#/components/schemas/Gender' }
+        birthDate: { type: string, format: date, nullable: true }
+        birthplace: { type: string }
+        currentLocation: { type: string }
+        isDeceased: { type: boolean, default: false }
+        deathDate: { type: string, format: date, nullable: true }
+        branchId: { type: string, format: uuid, nullable: true }
+        avatarUrl: { type: string }
+        note: { type: string }
+    Person:
+      allOf:
+        - $ref: '#/components/schemas/PersonInput'
+        - type: object
+          properties:
+            id: { type: string, format: uuid }
+            familyId: { type: string, format: uuid }
+            userId: { type: string, format: uuid, nullable: true }
+    PersonPage:
+      type: object
+      properties:
+        content:
+          type: array
+          items: { $ref: '#/components/schemas/Person' }
+        page: { type: integer }
+        size: { type: integer }
+        totalElements: { type: integer, format: int64 }
+
+    ParentChildInput:
+      type: object
+      required: [parentId, parentRole]
+      properties:
+        parentId: { type: string, format: uuid }
+        parentRole: { type: string, enum: [FATHER, MOTHER] }
+        kind: { type: string, enum: [BIOLOGICAL, ADOPTED, STEP], default: BIOLOGICAL }
+    ParentChild:
+      allOf:
+        - $ref: '#/components/schemas/ParentChildInput'
+        - type: object
+          properties:
+            id: { type: string, format: uuid }
+            childId: { type: string, format: uuid }
+
+    MarriageInput:
+      type: object
+      required: [person1Id, person2Id]
+      properties:
+        person1Id: { type: string, format: uuid }
+        person2Id: { type: string, format: uuid }
+        startDate: { type: string, format: date, nullable: true }
+    MarriageStatusInput:
+      type: object
+      required: [status]
+      properties:
+        status: { type: string, enum: [MARRIED, DIVORCED, WIDOWED] }
+        endDate: { type: string, format: date, nullable: true }
+    Marriage:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        person1Id: { type: string, format: uuid }
+        person2Id: { type: string, format: uuid }
+        status: { type: string, enum: [MARRIED, DIVORCED, WIDOWED] }
+        startDate: { type: string, format: date, nullable: true }
+        endDate: { type: string, format: date, nullable: true }
+
+    TreeNode:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        fullName: { type: string }
+        gender: { $ref: '#/components/schemas/Gender' }
+        birthYear: { type: integer, nullable: true }
+        isDeceased: { type: boolean }
+        branchId: { type: string, format: uuid, nullable: true }
+        hasMoreAncestors: { type: boolean, description: Còn tổ tiên chưa được tải }
+        hasMoreDescendants: { type: boolean, description: Còn hậu duệ chưa được tải }
+    TreeEdge:
+      type: object
+      properties:
+        id: { type: string }
+        type: { type: string, enum: [PARENT_CHILD, MARRIAGE] }
+        source: { type: string, format: uuid, description: "Với PARENT_CHILD là cha/mẹ" }
+        target: { type: string, format: uuid, description: "Với PARENT_CHILD là con" }
+        kind: { type: string, enum: [BIOLOGICAL, ADOPTED, STEP], description: Chỉ có với PARENT_CHILD }
+        status: { type: string, enum: [MARRIED, DIVORCED, WIDOWED], description: Chỉ có với MARRIAGE }
+    TreeResponse:
+      type: object
+      properties:
+        rootId: { type: string, format: uuid }
+        nodes:
+          type: array
+          items: { $ref: '#/components/schemas/TreeNode' }
+        edges:
+          type: array
+          items: { $ref: '#/components/schemas/TreeEdge' }
+
+    RelationshipResult:
+      type: object
+      properties:
+        personA: { type: string, format: uuid }
+        personB: { type: string, format: uuid }
+        supported: { type: boolean, description: false nếu quan hệ chưa có trong bảng ánh xạ }
+        relation: { type: string, nullable: true, description: "Tên quan hệ, nghĩa là A là ... của B" }
+        description: { type: string }
+        commonAncestorId: { type: string, format: uuid, nullable: true }
+        stepsFromA: { type: integer, nullable: true }
+        stepsFromB: { type: integer, nullable: true }
+        pathPersonIds:
+          type: array
+          items: { type: string, format: uuid }
