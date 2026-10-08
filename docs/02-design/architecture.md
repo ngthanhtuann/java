@@ -6,53 +6,48 @@
 > Thể hiện đúng kiến trúc đề tài: **Web Management Portal**, **Mobile Application**, **AI Service Layer** kết nối qua **RESTful API**. Các khối logic trong Spring Boot backend và cách xử lý lỗi tập trung.
 
 ```mermaid
-flowchart LR
-    subgraph Frontend ["Frontend (web/mobile)"]
-        Web[Next.js Web]
-        Mobile[Mobile App - React Native/Expo]
+graph TD
+    %% Tầng Frontend
+    subgraph ClientLayer ["Frontend Layer"]
+        Web["Next.js Web<br>(Cổng quản lý)"]
+        Mobile["Mobile App<br>(React Native / Expo)"]
     end
 
-    subgraph Backend ["Spring Boot Backend (khối nguyên khối)"]
-        API["API Gateway (REST Controller)"]
+    %% Tầng Backend
+    subgraph BackendSystem ["Spring Boot API Backend"]
+        Common["common<br>(JWT filter, audit log, ErrorResponse)"]
         
-        subgraph CoreModules ["Core Modules"]
-            Auth[Xác thực - auth]
-            row1_2["Người dùng, Admin<br/>(user, admin)"]
-            Gene[Gia phả - genealogy]
-            Commu[Cộng đồng - community]
-            Event[Sự kiện - events]
-            Heri[Di sản - heritage]
-            Direc[Danh bạ - directory]
-            Dash[Thống kê - dashboard]
+        subgraph Modules ["Business Modules"]
+            direction TB
+            Auth["auth"]
+            UserAdmin["user, admin"]
+            Genealogy["genealogy"]
+            Dashboard["dashboard"]
+            CommEvents["community, events"]
+            HeritageDir["heritage, directory"]
         end
-        
-        Ai("AI Service (AiGateway) <br/> - tìm kiếm ngữ nghĩa <br/> - chatbot <br/> - phân tích/gợi ý")
+
+        AiLayer["ai (AI Service)<br>/api/v1/ai/**"]
     end
 
-    subgraph External ["Dịch vụ bên ngoài"]
-        LLM[LLM API]
-    end
-    
-    subgraph DatabaseLayer ["Lớp dữ liệu"]
-        DB[(PostgreSQL + pgvector<br/>schema public)]
-        Uploads[("Local/Cloud Storage <br/> (ảnh, tệp tải lên)")]
-    end
+    %% Database và LLM bên ngoài
+    DB[("PostgreSQL + pgvector<br>(schema public, bảng ai_*)")]
+    LLM["LLM API bên ngoài<br>(Internet, HTTPS)"]
 
-    %% CÁC ĐƯỜNG MŨI TÊN (từ 0 đến 7)
-    Frontend -->|"HTTPS REST /api/v1"| API
-    API -->|"gọi service"| CoreModules
-    API -->|"gọi service"| Ai
-    CoreModules -->|"CRUD"| DB
-    Ai -->|"embeddings/vector search"| DB
-    Ai -->|"truy vấn"| LLM
-    Ai -->|"lưu/đọc tệp"| Uploads
-    
-    classDef errorType fill:#f9f,stroke:#333,stroke-width:2px,color:black;
-    API -.->|"Response: ErrorResponse <br/> (theo conventions.md)"| Frontend
+    %% Luồng kết nối
+    ClientLayer -->|"RESTful API"| BackendSystem
+    BackendSystem -->|"JPA, tìm kiếm vector"| DB
+    AiLayer -->|"Prompt / response"| LLM
 
-    %% ĐỊNH DẠNG MŨI TÊN (Đã sửa lại index từ 0 -> 7)
-    linkStyle 0,1,2,3,4,5,6 stroke:#444,stroke-width:1px;
-    linkStyle 7 stroke:red,stroke-dasharray: 5 5,stroke-width:2px;
+    %% Phối màu trực quan
+    classDef backend fill:#d4edda,stroke:#28a745,stroke-width:1px,color:black;
+    classDef aiclass fill:#e2d9f3,stroke:#6f42c1,stroke-width:1px,color:black;
+    classDef dbclass fill:#e6cda3,stroke:#8b5a2b,stroke-width:1px,color:black;
+
+    class Common,Auth,UserAdmin,Genealogy,CommEvents,HeritageDir,Dashboard backend;
+    class AiLayer aiclass;
+    class DB dbclass;
+
 ```
 ## 2. Quyết định thiết kế lớp AI Service
 ### 2.1. Quyết định kiến trúc
@@ -114,49 +109,107 @@ Ghi chú ngay dưới sơ đồ: "Hiện chạy 1 bản backend; đích triển 
 ### 4.1 Đăng nhập JWT
 ```mermaid
 sequenceDiagram
-    participant U as Người dùng
-    participant FE as Web/Mobile
-    participant BE as Spring Boot Backend
-    U->>FE: Nhập email, mật khẩu
-    FE->>BE: POST /api/v1/auth/login
-    note over BE: Xác thực thông tin người dùng
-    alt thông tin không hợp lệ
-        BE-->>FE: Response: ErrorResponse (AUTH_001)
-    else thông tin hợp lệ
-        note over BE: Ký Access Token & Refresh Token
-        BE-->>FE: access token + refresh token
+    autonumber
+    participant User as Người dùng
+    participant App as Web / Mobile
+    participant Nginx
+    participant AuthC as AuthController
+    participant AuthS as AuthService
+    participant Repo as UserRepository
+    participant DB as PostgreSQL
+    participant Audit as AuditService
+
+    User->>App: Nhập email và mật khẩu
+    App->>Nginx: POST /api/v1/auth/login
+    Nginx->>AuthC: chuyển tiếp tới backend
+    AuthC->>AuthS: login(LoginRequest)
+    AuthS->>Repo: findByEmail
+    Repo->>DB: SELECT user
+    DB-->>Repo: user và password hash
+    Repo-->>AuthS: User
+
+    AuthS->>AuthS: BCrypt so khớp mật khẩu
+    AuthS->>AuthS: kiểm tra trạng thái tài khoản
+
+    alt sai thông tin
+        Note over AuthS: Gộp chung lỗi sai email<br/>hoặc mật khẩu để bảo mật
+        AuthS->>Audit: ghi LOGIN_FAILED
+        AuthS-->>AuthC: 401 ErrorResponse (AUTH_001)
+        AuthC-->>App: 401 ErrorResponse (AUTH_001)
+    else tài khoản bị khóa hoặc chưa kích hoạt
+        AuthS->>Audit: ghi LOGIN_BLOCKED
+        AuthS-->>AuthC: 403 ErrorResponse (AUTH_003)
+        AuthC-->>App: 403 ErrorResponse (AUTH_003)
+    else hợp lệ
+        AuthS->>AuthS: tạo access token và refresh token
+        AuthS->>Audit: ghi LOGIN_SUCCESS
+        AuthS-->>AuthC: TokenResponse
+        AuthC-->>App: 200 TokenResponse
+
+        App->>App: lưu token
+        Note over App: Web: cookie httpOnly<br/>Mobile: expo-secure-store
+
+        rect rgb(255, 255, 204)
+        Note over App: Các request sau gửi<br/>header Authorization Bearer
+        end
     end
 ```
 ### 4.2 Hỏi chatbot AI
 ```mermaid
 sequenceDiagram
+    autonumber
     participant U as Người dùng
-    participant FE as Web/Mobile
-    participant Gateway as API Gateway (Spring Boot)
-    participant AiServ as AI Service Module
-    participant DB as PostgreSQL + pgvector
-    participant LLM as LLM API bên ngoài
+    participant FE as Web / Mobile
+    participant NG as Nginx
+    participant JW as JwtAuthFilter
+    participant AC as AiController
+    participant GW as AiGateway
+    participant DB as PostgreSQL pgvector
+    participant LL as LLM API
+    participant AU as AuditService
 
-    U->>FE: Nhập câu hỏi, gửi
-    FE->>Gateway: POST /api/v1/ai/chat (ChatRequest, userId)
-
-    Gateway->>AiServ: ask(ChatRequest, userId)
+    U->>FE: Nhập câu hỏi
+    FE->>NG: POST /api/v1/ai/chat kèm Bearer token
+    NG->>JW: chuyển tiếp
+    JW->>JW: kiểm tra chữ ký, hạn dùng,<br/>vai trò
     
-    alt tài khoản chưa xác minh
-        Gateway-->>FE: 403 ErrorResponse (PERM_002)
-    else vượt giới hạn câu hỏi
-        Gateway-->>FE: 429 ErrorResponse (RATE_001)
-    else hợp lệ
-        Gateway->>AiServ: tạo embedding cho câu hỏi
-        AiServ->>DB: tìm kiếm vector top-k (lọc theo family_id)
-        DB-->>AiServ: danh sách đoạn văn ngữ cảnh
-        AiServ->>AiServ: ghép ngữ cảnh + prompt hệ thống
-        AiServ->>+LLM: gửi prompt (HTTPS)
-        LLM-->>-AiServ: phản hồi từ LLM
-        AiServ->>AiServ: lưu lịch sử hội thoại vào bảng ai_chat_message
-        AiServ-->>Gateway: ChatResponse (bao gồm nguồn)
-        Gateway-->>FE: 200 OK (ChatResponse)
+    alt token sai hoặc hết hạn
+        JW-->>FE: 401 ErrorResponse (AUTH_002)
+    else token hợp lệ
+        JW->>AC: request kèm Authentication
+        AC->>GW: ask(ChatRequest, userId)
+        
+        alt tài khoản chưa xác minh
+            GW->>AU: ghi AI_UNAUTHORIZED
+            GW-->>AC: 403 ErrorResponse (PERM_002)
+            AC-->>FE: 403 ErrorResponse (PERM_002)
+        else vượt giới hạn câu hỏi
+            GW->>AU: ghi AI_RATE_LIMITED
+            GW-->>AC: 429 ErrorResponse (RATE_001)
+            AC-->>FE: 429 ErrorResponse (RATE_001)
+        else hợp lệ
+            GW->>LL: tạo embedding<br/>cho câu hỏi
+            LL-->>GW: vector
+            GW->>DB: tìm top-k gần nhất, lọc theo family_id và quyền xem
+            DB-->>GW: các đoạn ngữ cảnh
+            GW->>GW: lọc trường được phép gửi (privacy.md mục 8)
+            GW->>LL: prompt gồm chỉ dẫn hệ thống, ngữ cảnh, câu hỏi
+            
+            alt LLM lỗi hoặc quá hạn
+                LL-->>GW: timeout / API error
+                GW->>AU: ghi LLM_API_ERROR
+                GW-->>AC: fallback: trả về thông báo<br/>lỗi dịch vụ LLM
+                AC-->>FE: 503 ErrorResponse
+            else LLM thành công
+                LL-->>GW: câu trả lời tự nhiên
+                GW->>DB: lưu ai_chat_message
+                GW->>AU: ghi AI_QUERY, không lưu prompt thô
+                GW-->>AC: ChatResponse gồm answer và citations
+                AC-->>FE: 200 ChatResponse
+            end
+        end
     end
+    FE-->>U: Hiển thị câu trả lời
 ```
 ## 5. Cấu trúc mã nguồn
 
