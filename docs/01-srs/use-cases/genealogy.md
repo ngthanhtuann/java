@@ -302,7 +302,7 @@ SELECT EXISTS (SELECT 1 FROM ancestors WHERE parent_id = :child);  -- true => t�
 
 ## 7. Danh sách API
 
-Tất cả API nằm dưới `/api/v1`, tên tài nguyên số nhiều, theo `docs/04-api/conventions.md`: response thành công `{ "success": true, "data": ..., "meta": {...} }`, lỗi `{ "success": false, "error": { "code", "message", "details" } }`, phân trang `?page=0&size=20&sort=created_at,desc`. Đặc tả đầy đủ (request, response mẫu, mã lỗi) ở `docs/04-api/openapi/genealogy.yaml`.
+Tất cả API nằm dưới `/api/v1`, tên tài nguyên số nhiều, theo `docs/04-api/conventions.md`: response thành công `{ "success": true, "data": ..., "meta": {...} }`, lỗi `{ "success": false, "error": { "code", "message", "details" } }`, phân trang `?page=0&size=20&sort=createdAt,desc`. Đặc tả đầy đủ (request, response mẫu, mã lỗi) ở `docs/04-api/openapi/genealogy.yaml`.
 
 ### 7.1 Endpoint
 
@@ -330,7 +330,7 @@ Tất cả API nằm dưới `/api/v1`, tên tài nguyên số nhiều, theo `do
 | GET | `/families/{familyId}/tree` | Lấy cây dạng nodes và edges | UC-GEN-06 | MEMBER đã xác minh trở lên |
 | GET | `/relationships` | Truy vấn A là gì của B, kèm đường đi (`personA`, `personB`) | UC-GEN-07, 08 | MEMBER đã xác minh trở lên |
 
-### 7.2 Mã lỗi của module (đề xuất bổ sung vào bảng mã lỗi của `conventions.md`)
+### 7.2 Mã lỗi riêng của module (theo `conventions.md` mục 3.2)
 
 Mã chung dùng nguyên: `VALID_001` (400), `NOT_FOUND_001` (404), `PERM_001` (403, không đủ quyền hoặc gia đình khác), `PERM_002` (403, chưa xác minh), `AUTH_002` (401). Mã riêng của module (đều HTTP 409, vi phạm quy tắc nghiệp vụ):
 
@@ -393,4 +393,4 @@ Ngày mất trước ngày sinh, người còn sống thiếu ngày sinh, chi h�
 3. Con nuôi, con kế có được tính trong thuật toán quan hệ họ hàng không? (BR-GEN-13)
 4. Nhóm hiểu FR-GEN-07 "Relationship visualization" là tô sáng đường quan hệ giữa hai người (như UC-GEN-07), hay là toàn bộ việc vẽ cây? Nếu là vẽ cây thì gộp UC-GEN-07 vào UC-GEN-06.
 5. Ngưỡng trẻ em là dưới 16 tuổi (theo `privacy.md`): cần nhóm xác nhận. (BR-GEN-10, 16)
-6. Các mã `GEN_001` đến `GEN_013` ở mục 7.2 cần PiLo257 đưa vào `docs/04-api/conventions.md` (SCRUM-21), cùng `PERM_002` và `RATE_001`.
+6. Các mã `GEN_001` đến `GEN_013` ở mục 7.2 là mã riêng của module, theo quy tắc `<MODULE>_<số>` (HTTP 409) ở `conventions.md` mục 3.2; không cần thêm vào bảng mã chung.
