@@ -1,6 +1,6 @@
 # Người viết: TV2 (Nguyễn Minh Trí). Task SCRUM-18. Theo quy ước ../conventions.md (SCRUM-21)
 # Response thành công: { success: true, data, meta? }   Lỗi: { success: false, error: { code, message, details } }
-# Mã lỗi riêng GEN_001..GEN_013 giải thích ở docs/02-design/genealogy.md mục 7.2 (chờ bổ sung vào conventions.md)
+# Mã lỗi riêng GEN_001..GEN_013 (HTTP 409) giải thích ở docs/02-design/genealogy.md mục 7.2, theo quy tắc mã lỗi riêng ở conventions.md mục 3.2
 openapi: 3.0.3
 info:
   title: FamilyConnect - Gia phả
@@ -580,7 +580,7 @@ components:
     marriageId: { name: marriageId, in: path, required: true, schema: { type: string, format: uuid } }
     page: { name: page, in: query, description: Trang, bắt đầu từ 0, schema: { type: integer, minimum: 0, default: 0 } }
     size: { name: size, in: query, description: Số phần tử mỗi trang, schema: { type: integer, minimum: 1, maximum: 100, default: 20 } }
-    sort: { name: sort, in: query, description: 'Sắp xếp, ví dụ created_at,desc', schema: { type: string, default: 'created_at,desc' } }
+    sort: { name: sort, in: query, description: 'Sắp xếp theo tên trường JSON, ví dụ createdAt,desc', schema: { type: string, default: 'createdAt,desc' } }
 
   responses:
     ValidationError:
