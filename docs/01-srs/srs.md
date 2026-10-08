@@ -261,9 +261,9 @@ Cột trống được điền dần trong các sprint sau; mỗi hàng nối y�
 
 | Mã FR/NFR | Use case | Bảng DB | API | Màn hình | Test case | Task Jira |
 |---|---|---|---|---|---|---|
-| FR-AUTH-01 | UC-AUTH-01, 02, 03 | user, role, user_role, refresh_token | POST /auth/register, /auth/login, /auth/refresh | Đăng nhập, Đăng ký | TC-AUTH-001 | SCRUM-35, 36 |
+| FR-AUTH-01 | UC-AUTH-01, 02, 03 | users, role, user_role, refresh_token | POST /auth/register, /auth/login, /auth/refresh | Đăng nhập, Đăng ký | TC-AUTH-001 | SCRUM-35, 36 |
 | FR-GEN-08 | UC-GEN-08 | parent_child, person | GET /relationships | Tra quan hệ | | SCRUM-51 |
-| FR-AI-02 | UC-AI-02 | embedding_chunk, chat_session, chat_message | POST /ai/chat | Chat AI | | SCRUM-55, 63 |
+| FR-AI-02 | UC-AI-02 | ai_embedding_chunk, ai_chat_session, ai_chat_message | POST /ai/chat | Chat AI | | SCRUM-55, 63 |
 | (điền thêm) | | | | | | |
 
 ---
@@ -276,6 +276,7 @@ Cột trống được điền dần trong các sprint sau; mỗi hàng nối y�
 | Đăng ký, đăng nhập | Có | Có | Có | Có | Có |
 | Xem và sửa hồ sơ của chính mình | Không | Có | Có | Có | Có |
 | Xin tham gia gia đình | Không | Có | Không (đã tham gia) | Không | Không |
+| Tạo gia đình mới (người tạo trở thành trưởng chi của gia đình đó) | Không | Có (nếu chưa thuộc gia đình nào) | Không (đã thuộc gia đình) | Không | Có |
 | Duyệt hoặc từ chối yêu cầu tham gia | Không | Không | Không | Có (gia đình/chi của mình) | Có |
 | Xem cây gia phả và danh sách thành viên | Không | Không | Có (gia đình của mình) | Có | Có |
 | Thêm, sửa, xóa thành viên, quan hệ cha-mẹ-con, hôn nhân | Không | Không | Không | Có | Có |
@@ -297,6 +298,8 @@ Cột trống được điền dần trong các sprint sau; mỗi hàng nối y�
 | Cấu hình hệ thống | Không | Không | Không | Không | Có |
 
 > Ghi chú: "Thành viên chưa xác minh" là một **trạng thái** của vai trò `MEMBER` (chờ trưởng chi duyệt), không phải vai trò riêng. Vì vậy hệ thống chỉ có 4 vai trò: GUEST, MEMBER, BRANCH_ADMIN, SYSTEM_ADMIN.
+
+> Ghi chú: Phạm vi của `BRANCH_ADMIN` là chi được gán (kèm các chi con); nếu không gán chi cụ thể thì quản lý cả gia đình. Mỗi người dùng thuộc tối đa một gia đình. Bảng người dùng đặt tên `users` (vì `user` là từ khóa PostgreSQL).
 
 ---
 
