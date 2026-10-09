@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: FamilyConnect - Module Heritage, Directory, Dashboard API
-  version: 1.1.0
+  version: 1.2.0
   description: |
     Đặc tả API cho module Danh bạ (Directory), Di sản (Heritage) và Thống kê bảng điều khiển (Dashboard) - SCRUM-22.
 
@@ -12,6 +12,8 @@ info:
     - Phạm vi trưởng chi: `BRANCH_ADMIN` chỉ thao tác trong phạm vi chi của mình (hoặc cả gia đình nếu `branchId` rỗng), theo BR-GEN-14.
     - Trẻ dưới 16 tuổi chỉ hiển thị tên, quan hệ, năm sinh (xem privacy.md, mục "Trẻ em và người đã mất").
     - Module dashboard không có bảng riêng; dữ liệu lấy qua interface Java của genealogy, community, events.
+    - Phân quyền theo bảng "Ai được làm gì" của `srs.md`: MEMBER **không** xem dashboard và không xuất báo cáo; chỉ BRANCH_ADMIN và SYSTEM_ADMIN thêm/sửa/xóa tài liệu lịch sử và quản lý người tiêu biểu (MEMBER chỉ xem).
+    - API xóa trả `200` với `{success: true, data: null}`, không dùng `204`; danh sách có `page`, `size`, `sort` (size tối đa 100, vượt thì `400 VALID_001`).
     - Xuất PDF (FR-DSH-05) để Sprint 6-7 (SCRUM-62, SCRUM-95), hiện chỉ hỗ trợ CSV.
 servers:
   - url: /api/v1
@@ -67,6 +69,7 @@ paths:
               schema: { $ref: '#/components/schemas/PersonSearchListResponse' }
               examples:
                 success: { $ref: '#/components/examples/DirectorySearch' }
+        '400': { $ref: '#/components/responses/BadRequestError' }
         '401': { $ref: '#/components/responses/UnauthorizedError' }
         '403': { $ref: '#/components/responses/ForbiddenError' }
         '500': { $ref: '#/components/responses/InternalServerError' }
@@ -225,6 +228,7 @@ paths:
               schema: { $ref: '#/components/schemas/HeritageDocumentListResponse' }
               examples:
                 success: { $ref: '#/components/examples/DocumentList' }
+        '400': { $ref: '#/components/responses/BadRequestError' }
         '401': { $ref: '#/components/responses/UnauthorizedError' }
         '403': { $ref: '#/components/responses/ForbiddenError' }
         '500': { $ref: '#/components/responses/InternalServerError' }
@@ -232,11 +236,11 @@ paths:
       tags: [Heritage]
       summary: Thêm tài liệu (UC-HER-01)
       description: |
-        Vai trò: MEMBER, BRANCH_ADMIN, SYSTEM_ADMIN. Tệp được tải lên trước bằng endpoint của community, sau đó gắn bằng `mediaId`.
+        Vai trò: BRANCH_ADMIN, SYSTEM_ADMIN (MEMBER gọi trả 403 PERM_001). Tệp được tải lên trước bằng `POST /media` của community, sau đó gắn bằng `mediaId`.
         `media.family_id` phải trùng gia đình của người dùng, nếu không trả 403 PERM_001 (chống IDOR). `mediaId` không tồn tại trả 404.
         Sau khi tạo, module ai được thông báo qua interface để cập nhật embedding.
       operationId: createDocument
-      x-roles: [MEMBER, BRANCH_ADMIN, SYSTEM_ADMIN]
+      x-roles: [BRANCH_ADMIN, SYSTEM_ADMIN]
       requestBody:
         required: true
         content:
@@ -288,10 +292,10 @@ paths:
       tags: [Heritage]
       summary: Sửa tài liệu lịch sử (UC-HER-01)
       description: |
-        Chỉ người đăng (`created_by`) hoặc BRANCH_ADMIN/SYSTEM_ADMIN trong phạm vi được sửa, nếu không trả 403 PERM_001.
+        Vai trò: BRANCH_ADMIN, SYSTEM_ADMIN trong gia đình của mình; MEMBER trả 403 PERM_001.
         Không đổi được `mediaId`. Chỉ gửi trường cần sửa.
       operationId: updateDocument
-      x-roles: [MEMBER, BRANCH_ADMIN, SYSTEM_ADMIN]
+      x-roles: [BRANCH_ADMIN, SYSTEM_ADMIN]
       parameters:
         - $ref: '#/components/parameters/ResourceId'
       requestBody:
@@ -319,13 +323,19 @@ paths:
     delete:
       tags: [Heritage]
       summary: Xóa tài liệu lịch sử (UC-HER-01)
-      description: Xóa mềm. Chỉ người đăng hoặc BRANCH_ADMIN/SYSTEM_ADMIN trong phạm vi.
+      description: Xóa mềm. Vai trò BRANCH_ADMIN, SYSTEM_ADMIN; MEMBER trả 403 PERM_001.
       operationId: deleteDocument
-      x-roles: [MEMBER, BRANCH_ADMIN, SYSTEM_ADMIN]
+      x-roles: [BRANCH_ADMIN, SYSTEM_ADMIN]
       parameters:
         - $ref: '#/components/parameters/ResourceId'
       responses:
-        '204': { description: Xóa thành công }
+        '200':
+          description: Xóa thành công
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/DeleteResponse' }
+              example: { success: true, data: null }
+        '400': { $ref: '#/components/responses/BadRequestError' }
         '401': { $ref: '#/components/responses/UnauthorizedError' }
         '403': { $ref: '#/components/responses/ForbiddenError' }
         '404': { $ref: '#/components/responses/NotFoundError' }
@@ -350,6 +360,7 @@ paths:
               schema: { $ref: '#/components/schemas/FamilyStoryListResponse' }
               examples:
                 success: { $ref: '#/components/examples/StoryList' }
+        '400': { $ref: '#/components/responses/BadRequestError' }
         '401': { $ref: '#/components/responses/UnauthorizedError' }
         '403': { $ref: '#/components/responses/ForbiddenError' }
         '500': { $ref: '#/components/responses/InternalServerError' }
@@ -447,7 +458,13 @@ paths:
       parameters:
         - $ref: '#/components/parameters/ResourceId'
       responses:
-        '204': { description: Xóa thành công }
+        '200':
+          description: Xóa thành công
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/DeleteResponse' }
+              example: { success: true, data: null }
+        '400': { $ref: '#/components/responses/BadRequestError' }
         '401': { $ref: '#/components/responses/UnauthorizedError' }
         '403': { $ref: '#/components/responses/ForbiddenError' }
         '404': { $ref: '#/components/responses/NotFoundError' }
@@ -460,7 +477,7 @@ paths:
       description: |
         Vai trò MEMBER, BRANCH_ADMIN, SYSTEM_ADMIN. Đọc các bản ghi media có `owner_type = 'HERITAGE'` của gia đình
         qua interface của community; chú thích lấy từ `media.caption`.
-        Việc tải ảnh lên dùng endpoint của community (không có POST /heritage/photos).
+        Tải ảnh lên dùng `POST /media` của community với `ownerType = HERITAGE` (không có POST /heritage/photos).
       operationId: getHeritagePhotos
       x-roles: [MEMBER, BRANCH_ADMIN, SYSTEM_ADMIN]
       parameters:
@@ -475,6 +492,7 @@ paths:
               schema: { $ref: '#/components/schemas/PhotoListResponse' }
               examples:
                 success: { $ref: '#/components/examples/PhotoList' }
+        '400': { $ref: '#/components/responses/BadRequestError' }
         '401': { $ref: '#/components/responses/UnauthorizedError' }
         '403': { $ref: '#/components/responses/ForbiddenError' }
         '500': { $ref: '#/components/responses/InternalServerError' }
@@ -503,6 +521,7 @@ paths:
               schema: { $ref: '#/components/schemas/OutstandingMemberListResponse' }
               examples:
                 success: { $ref: '#/components/examples/OutstandingList' }
+        '400': { $ref: '#/components/responses/BadRequestError' }
         '401': { $ref: '#/components/responses/UnauthorizedError' }
         '403': { $ref: '#/components/responses/ForbiddenError' }
         '500': { $ref: '#/components/responses/InternalServerError' }
@@ -581,7 +600,13 @@ paths:
       parameters:
         - $ref: '#/components/parameters/ResourceId'
       responses:
-        '204': { description: Xóa thành công }
+        '200':
+          description: Xóa thành công
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/DeleteResponse' }
+              example: { success: true, data: null }
+        '400': { $ref: '#/components/responses/BadRequestError' }
         '401': { $ref: '#/components/responses/UnauthorizedError' }
         '403': { $ref: '#/components/responses/ForbiddenError' }
         '404': { $ref: '#/components/responses/NotFoundError' }
@@ -592,14 +617,14 @@ paths:
       tags: [Dashboard]
       summary: Chỉ số thống kê bảng điều khiển (UC-DSH-01)
       description: |
-        Vai trò: MEMBER, BRANCH_ADMIN, SYSTEM_ADMIN xem được thống kê của gia đình mình.
+        Vai trò: BRANCH_ADMIN (trong phạm vi chi của mình, hoặc cả gia đình nếu không có chi), SYSTEM_ADMIN. MEMBER không xem dashboard (403 PERM_001, theo `srs.md`).
         `branchId` tùy chọn để trưởng chi xem theo chi; chi không thuộc phạm vi hoặc khác gia đình trả 403 PERM_001.
         Nguồn dữ liệu qua interface Java: số thành viên, giới tính, thế hệ (genealogy); bài đăng theo tuần (community); sự kiện sắp tới (events).
         `professionStats` và `locationStats` loại hồ sơ của trẻ dưới 16 tuổi.
         `weeklyPosts` gồm 8 tuần gần nhất, tuần không có bài trả `postCount = 0`, tuần tính theo múi giờ Asia/Ho_Chi_Minh.
         `generationStats` và `genderStats` tính cả người đã mất.
       operationId: getDashboardStats
-      x-roles: [MEMBER, BRANCH_ADMIN, SYSTEM_ADMIN]
+      x-roles: [BRANCH_ADMIN, SYSTEM_ADMIN]
       parameters:
         - name: branchId
           in: query
@@ -613,6 +638,7 @@ paths:
               schema: { $ref: '#/components/schemas/DashboardStatisticsResponse' }
               examples:
                 success: { $ref: '#/components/examples/DashboardStats' }
+        '400': { $ref: '#/components/responses/BadRequestError' }
         '401': { $ref: '#/components/responses/UnauthorizedError' }
         '403': { $ref: '#/components/responses/ForbiddenError' }
         '500': { $ref: '#/components/responses/InternalServerError' }
@@ -624,7 +650,7 @@ paths:
       description: |
         Vai trò: BRANCH_ADMIN (trong phạm vi chi của mình, hoặc cả gia đình nếu không có chi), SYSTEM_ADMIN.
         Cột: id, fullName, birthYear, gender, relationship, generation, jobTitle, workLocation.
-        Không xuất thông tin liên hệ và địa chỉ chi tiết. Với trẻ dưới 16 tuổi chỉ xuất fullName, relationship, birthYear.
+        Không xuất thông tin liên hệ và địa chỉ chi tiết. Với trẻ dưới 16 tuổi chỉ xuất id, fullName, relationship, birthYear.
         Tệp mã hóa UTF-8 có BOM để Excel đọc đúng tiếng Việt. Chống chèn công thức: ô bắt đầu bằng `=`, `+`, `-`, `@`
         được thêm dấu `'` phía trước. Mỗi lần xuất ghi audit log (SCRUM-57). PDF để Sprint 6-7 (SCRUM-62, SCRUM-95).
       operationId: exportMembersCsv
@@ -711,8 +737,12 @@ components:
         fullName: { type: string }
         relationship:
           type: string
-          description: Quan hệ so với người đang xem, tính qua thuật toán SCRUM-19. Trẻ dưới 16 tuổi vẫn hiện quan hệ.
-          example: "Cháu đích tôn"
+          nullable: true
+          description: |
+            Người trong danh bạ **là gì của người đang xem** (hướng "A là gì của B", A là người trong danh bạ), tên gọi theo thuật toán SCRUM-19
+            (ví dụ "con", "cháu nội", "anh họ (bên nội)", "chú"). Trẻ dưới 16 tuổi vẫn hiện quan hệ.
+            Null khi người xem chưa gắn với hồ sơ thành viên hoặc quan hệ chưa hỗ trợ (`supported = false`).
+          example: "cháu nội"
         birthYear: { type: integer, example: 1990 }
         generation:
           type: integer
@@ -808,7 +838,7 @@ components:
         description: { type: string, nullable: true }
         category: { type: string, nullable: true }
         mediaId: { type: string, format: uuid }
-        contentUrl: { type: string, description: Endpoint của community có kiểm tra quyền., example: "/media/d3a85d34-4a2e-4b20-b851-d41a7d188111/content" }
+        contentUrl: { type: string, description: Endpoint của community có kiểm tra quyền., example: "/api/v1/media/d3a85d34-4a2e-4b20-b851-d41a7d188111/content" }
         createdAt: { type: string, format: date-time }
         updatedAt: { type: string, format: date-time }
     HeritageDocumentSingleResponse:
@@ -871,7 +901,7 @@ components:
       required: [mediaId, contentUrl, createdAt]
       properties:
         mediaId: { type: string, format: uuid }
-        contentUrl: { type: string, example: "/media/f4b85d34-4a2e-4b20-b851-d41a7d188999/content" }
+        contentUrl: { type: string, example: "/api/v1/media/f4b85d34-4a2e-4b20-b851-d41a7d188999/content" }
         caption: { type: string, nullable: true, description: Lấy từ media.caption. }
         createdAt: { type: string, format: date-time }
         updatedAt: { type: string, format: date-time }
@@ -986,6 +1016,13 @@ components:
         success: { type: boolean, example: true }
         data: { $ref: '#/components/schemas/DashboardStatisticsData' }
 
+    DeleteResponse:
+      type: object
+      required: [success, data]
+      properties:
+        success: { type: boolean, example: true }
+        data: { type: object, nullable: true, example: null }
+
     # ---------- Errors ----------
     ErrorDetail:
       type: object
@@ -1006,7 +1043,7 @@ components:
             message: { type: string }
             details:
               type: array
-              nullable: true
+              description: Lỗi chi tiết từng trường; không có thì để mảng rỗng.
               items: { $ref: '#/components/schemas/ErrorDetail' }
 
   responses:
@@ -1032,9 +1069,9 @@ components:
             error:
               code: "AUTH_002"
               message: "Token không hợp lệ hoặc đã hết hạn"
-              details: null
+              details: []
     ForbiddenError:
-      description: Không đủ quyền hoặc sai phạm vi (PERM_001), hoặc chưa được duyệt vào gia đình (PERM_002)
+      description: Không đủ quyền, sai vai trò hoặc sai phạm vi (PERM_001), hoặc chưa được duyệt vào gia đình (PERM_002)
       content:
         application/json:
           schema: { $ref: '#/components/schemas/ErrorResponse' }
@@ -1046,7 +1083,7 @@ components:
                 error:
                   code: "PERM_001"
                   message: "Không đủ quyền truy cập tính năng này"
-                  details: null
+                  details: []
             permFamily:
               summary: Chưa được duyệt vào gia đình (PERM_002)
               value:
@@ -1054,7 +1091,7 @@ components:
                 error:
                   code: "PERM_002"
                   message: "Chưa được duyệt vào gia đình"
-                  details: null
+                  details: []
     NotFoundError:
       description: Không tìm thấy dữ liệu (NOT_FOUND_001)
       content:
@@ -1065,7 +1102,7 @@ components:
             error:
               code: "NOT_FOUND_001"
               message: "Tài nguyên không tồn tại"
-              details: null
+              details: []
     ConflictError:
       description: Vi phạm quy tắc nghiệp vụ (HER_001)
       content:
@@ -1076,7 +1113,7 @@ components:
             error:
               code: "HER_001"
               message: "Thành viên đã tồn tại trong danh sách tiêu biểu"
-              details: null
+              details: []
     InternalServerError:
       description: Lỗi hệ thống (SERVER_001)
       content:
@@ -1087,7 +1124,7 @@ components:
             error:
               code: "SERVER_001"
               message: "Lỗi hệ thống, vui lòng thử lại sau"
-              details: null
+              details: []
 
   examples:
     DirectorySearch:
@@ -1097,14 +1134,14 @@ components:
         data:
           - id: "123e4567-e89b-12d3-a456-426614174000"
             fullName: "Nguyễn Văn An"
-            relationship: "Con trai"
+            relationship: "anh họ (bên nội)"
             birthYear: 1990
             generation: 4
             jobTitle: "Kỹ sư"
             location: "Hà Nội"
           - id: "5b0f2f6e-8d3a-4c1e-9a52-7e1d3c4b9a10"
             fullName: "Nguyễn Bảo Na"
-            relationship: "Cháu nội"
+            relationship: "cháu nội"
             birthYear: 2014
             generation: null
             jobTitle: null
@@ -1185,7 +1222,7 @@ components:
             description: "Bản số hóa"
             category: "gia-pha"
             mediaId: "d3a85d34-4a2e-4b20-b851-d41a7d188111"
-            contentUrl: "/media/d3a85d34-4a2e-4b20-b851-d41a7d188111/content"
+            contentUrl: "/api/v1/media/d3a85d34-4a2e-4b20-b851-d41a7d188111/content"
             createdAt: "2026-10-09T15:00:00Z"
             updatedAt: "2026-10-09T15:00:00Z"
           - id: "111e4567-e89b-12d3-a456-426614174334"
@@ -1193,7 +1230,7 @@ components:
             description: "Bản sao lưu trữ sắc phong"
             category: "sac-phong"
             mediaId: "c2a85d34-4a2e-4b20-b851-d41a7d188092"
-            contentUrl: "/media/c2a85d34-4a2e-4b20-b851-d41a7d188092/content"
+            contentUrl: "/api/v1/media/c2a85d34-4a2e-4b20-b851-d41a7d188092/content"
             createdAt: "2026-10-09T10:00:00Z"
             updatedAt: "2026-10-09T10:00:00Z"
         meta: { page: 0, size: 20, total: 2 }
@@ -1206,7 +1243,7 @@ components:
           description: "Bản số hóa"
           category: "gia-pha"
           mediaId: "d3a85d34-4a2e-4b20-b851-d41a7d188111"
-          contentUrl: "/media/d3a85d34-4a2e-4b20-b851-d41a7d188111/content"
+          contentUrl: "/api/v1/media/d3a85d34-4a2e-4b20-b851-d41a7d188111/content"
           createdAt: "2026-10-09T15:00:00Z"
           updatedAt: "2026-10-09T15:00:00Z"
     DocumentUpdated:
@@ -1218,7 +1255,7 @@ components:
           description: "Bản số hóa"
           category: "gia-pha"
           mediaId: "d3a85d34-4a2e-4b20-b851-d41a7d188111"
-          contentUrl: "/media/d3a85d34-4a2e-4b20-b851-d41a7d188111/content"
+          contentUrl: "/api/v1/media/d3a85d34-4a2e-4b20-b851-d41a7d188111/content"
           createdAt: "2026-10-09T15:00:00Z"
           updatedAt: "2026-10-09T16:00:00Z"
     StoryList:
@@ -1267,7 +1304,7 @@ components:
         success: true
         data:
           - mediaId: "f4b85d34-4a2e-4b20-b851-d41a7d188999"
-            contentUrl: "/media/f4b85d34-4a2e-4b20-b851-d41a7d188999/content"
+            contentUrl: "/api/v1/media/f4b85d34-4a2e-4b20-b851-d41a7d188999/content"
             caption: "Ảnh nhà thờ họ"
             createdAt: "2026-10-09T10:00:00Z"
             updatedAt: "2026-10-09T10:00:00Z"
