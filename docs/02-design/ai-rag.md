@@ -5,24 +5,8 @@
 > Cách làm: tạo nhánh `docs/<mã SCRUM>-<tên-ngắn>` từ `develop`, điền vào file này, mở Pull Request vào `develop`. Xem `docs/README.md`.
 
 ## 1. Kết quả spike (SCRUM-24)
-1. Embedding tiếng Việt
-   ├── Model: gemini-embedding-001
-   ├── Dimension: 3072
-   ├── Average: 683.5035 ms
-   └── Kết luận: Đạt
-2. Độ trễ
-   ├── Embedding: 683.5035 ms
-   ├── Semantic Search: 588.2618 ms
-   └── P95 Search: 628.1556 ms
-3. Chi phí ước tính
-   ├── Tính theo input/output tokens
-   ├── Gemini Flash: $0.75 / 1M input
-   └── $3.75 / 1M output
-      (đến 31/12/2026)
-4. Chọn LLM Provider
-   |── Gemini: Đã tích hợp + benchmark
-5. Decision
-   └── Chọn Gemini
+> Embedding tiếng Việt, độ trễ, chi phí ước tính, chọn nhà cung cấp LLM (Gemini hay OpenAI), quyết định.
+
 ## 2. Pipeline RAG
 ```mermaid
 flowchart LR
