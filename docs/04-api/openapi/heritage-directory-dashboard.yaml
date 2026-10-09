@@ -5,52 +5,41 @@ info:
   description: "Đặc tả API OpenAPI cho module Quản lý Danh bạ, Di sản và Thống kê bảng điều khiển (SCRUM-22)."
 servers:
   - url: /api/v1
-    description: "API Gateway Endpoint"
-
 security:
-  - BearerAuth: []
-
+  - bearerAuth: []
 tags:
   - name: Directory
-    description: "Quản lý danh bạ, tìm kiếm thành viên và hồ sơ nghề nghiệp/học vấn"
   - name: Heritage
-    description: "Quản lý tài liệu lịch sử, câu chuyện dòng họ, thư viện ảnh và người tiêu biểu"
   - name: Dashboard
-    description: "Thống kê phân tích số liệu tổng quan và kết xuất báo cáo CSV"
-
 paths:
-  /directory/persons/search:
+  /directory/members:
     get:
       tags: [Directory]
       summary: "Tìm kiếm thành viên theo nghề nghiệp, nơi ở, thế hệ (UC-DIR-01)"
-      description: |
-        Tìm kiếm thành viên trong gia đình theo tiêu chí.
-        Quy tắc bảo vệ trẻ em: Trẻ em dưới 16 tuổi chỉ trả về `name`, `relationship`, `birth_year`; các trường liên hệ, nghề nghiệp, nơi ở sẽ là null.
+      operationId: searchMembers
       x-roles: [MEMBER, BRANCH_ADMIN, SYSTEM_ADMIN]
       parameters:
         - name: job
           in: query
-          required: false
-          schema: { type: string, example: "Kỹ sư phần mềm" }
+          schema: { type: string }
         - name: location
           in: query
-          required: false
-          schema: { type: string, example: "Hà Nội" }
+          schema: { type: string }
         - name: generation
           in: query
-          required: false
-          schema: { type: integer, minimum: 1, example: 3 }
+          schema: { type: integer }
         - name: page
           in: query
-          required: false
-          schema: { type: integer, minimum: 0, default: 0 }
+          schema: { type: integer, default: 0 }
         - name: size
           in: query
-          required: false
-          schema: { type: integer, minimum: 1, maximum: 100, default: 20 }
+          schema: { type: integer, default: 20, maximum: 100 }
+        - name: sort
+          in: query
+          schema: { type: string, default: "createdAt,desc" }
       responses:
         '200':
-          description: "Tìm kiếm thành công"
+          description: "Thành công"
           content:
             application/json:
               schema:
@@ -61,17 +50,63 @@ paths:
                     type: array
                     items: { $ref: '#/components/schemas/PersonSearchResult' }
                   meta: { $ref: '#/components/schemas/PaginationMeta' }
+              example:
+                success: true
+                data:
+                  - id: "123e4567-e89b-12d3-a456-426614174000"
+                    fullName: "Nguyễn Văn An"
+                    relationship: "Cháu đích tôn"
+                    birthYear: 2012
+                    generation: 4
+                    jobTitle: null
+                    location: null
+                meta:
+                  page: 0
+                  size: 20
+                  total: 1
         '401': { $ref: '#/components/responses/UnauthorizedError' }
         '403': { $ref: '#/components/responses/ForbiddenFamilyError' }
-        '400': { $ref: '#/components/responses/BadRequestError' }
 
-  /directory/persons/{id}/profession:
+  /directory/members/{personId}/profession-profile:
+    get:
+      tags: [Directory]
+      summary: "Xem hồ sơ nghề nghiệp"
+      operationId: getProfessionProfile
+      x-roles: [MEMBER, BRANCH_ADMIN, SYSTEM_ADMIN]
+      parameters:
+        - name: personId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: "Thành công"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean, example: true }
+                  data: { $ref: '#/components/schemas/ProfessionProfileData' }
+              example:
+                success: true
+                data:
+                  id: "456e4567-e89b-12d3-a456-426614174111"
+                  jobTitle: "Kỹ sư"
+                  company: "FPT"
+                  workLocation: "Hà Nội"
+                  createdAt: "2026-10-09T10:00:00Z"
+                  updatedAt: "2026-10-09T10:00:00Z"
+        '401': { $ref: '#/components/responses/UnauthorizedError' }
+        '403': { $ref: '#/components/responses/ForbiddenFamilyError' }
+        '404': { $ref: '#/components/responses/NotFoundError' }
     put:
       tags: [Directory]
       summary: "Cập nhật hồ sơ nghề nghiệp (UC-DIR-02)"
-      x-roles: [MEMBER, BRANCH_ADMIN]
+      operationId: updateProfessionProfile
+      x-roles: [MEMBER, BRANCH_ADMIN, SYSTEM_ADMIN]
       parameters:
-        - name: id
+        - name: personId
           in: path
           required: true
           schema: { type: string, format: uuid }
@@ -80,23 +115,74 @@ paths:
         content:
           application/json:
             schema: { $ref: '#/components/schemas/ProfessionProfileRequest' }
+            example:
+              jobTitle: "Chuyên viên dữ liệu"
+              company: "Tập đoàn ABC"
+              workLocation: "Đà Nẵng"
       responses:
         '200':
-          description: "Cập nhật thành công"
+          description: "Thành công"
           content:
             application/json:
-              schema: { $ref: '#/components/schemas/ActionSuccessResponse' }
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean, example: true }
+                  data: { $ref: '#/components/schemas/ProfessionProfileData' }
+              example:
+                success: true
+                data:
+                  id: "456e4567-e89b-12d3-a456-426614174111"
+                  jobTitle: "Chuyên viên dữ liệu"
+                  company: "Tập đoàn ABC"
+                  workLocation: "Đà Nẵng"
+                  createdAt: "2026-10-09T10:00:00Z"
+                  updatedAt: "2026-10-10T12:00:00Z"
         '400': { $ref: '#/components/responses/BadRequestError' }
         '401': { $ref: '#/components/responses/UnauthorizedError' }
-        '403': { $ref: '#/components/responses/ForbiddenRoleError' }
+        '403': { $ref: '#/components/responses/ForbiddenErrors' }
+        '404': { $ref: '#/components/responses/NotFoundError' }
 
-  /directory/persons/{id}/education:
+  /directory/members/{personId}/education-profile:
+    get:
+      tags: [Directory]
+      summary: "Xem hồ sơ học vấn"
+      operationId: getEducationProfile
+      x-roles: [MEMBER, BRANCH_ADMIN, SYSTEM_ADMIN]
+      parameters:
+        - name: personId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: "Thành công"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean, example: true }
+                  data: { $ref: '#/components/schemas/EducationProfileData' }
+              example:
+                success: true
+                data:
+                  id: "789e4567-e89b-12d3-a456-426614174222"
+                  school: "Đại học Bách Khoa"
+                  degree: "Kỹ sư"
+                  graduationYear: 2024
+                  createdAt: "2026-10-09T10:00:00Z"
+                  updatedAt: "2026-10-09T10:00:00Z"
+        '401': { $ref: '#/components/responses/UnauthorizedError' }
+        '403': { $ref: '#/components/responses/ForbiddenFamilyError' }
+        '404': { $ref: '#/components/responses/NotFoundError' }
     put:
       tags: [Directory]
       summary: "Cập nhật hồ sơ học vấn (UC-DIR-02)"
-      x-roles: [MEMBER, BRANCH_ADMIN]
+      operationId: updateEducationProfile
+      x-roles: [MEMBER, BRANCH_ADMIN, SYSTEM_ADMIN]
       parameters:
-        - name: id
+        - name: personId
           in: path
           required: true
           schema: { type: string, format: uuid }
@@ -105,24 +191,53 @@ paths:
         content:
           application/json:
             schema: { $ref: '#/components/schemas/EducationProfileRequest' }
+            example:
+              school: "Đại học Kinh Tế"
+              degree: "Cử nhân"
+              graduationYear: 2025
       responses:
         '200':
-          description: "Cập nhật thành công"
+          description: "Thành công"
           content:
             application/json:
-              schema: { $ref: '#/components/schemas/ActionSuccessResponse' }
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean, example: true }
+                  data: { $ref: '#/components/schemas/EducationProfileData' }
+              example:
+                success: true
+                data:
+                  id: "789e4567-e89b-12d3-a456-426614174222"
+                  school: "Đại học Kinh Tế"
+                  degree: "Cử nhân"
+                  graduationYear: 2025
+                  createdAt: "2026-10-09T10:00:00Z"
+                  updatedAt: "2026-10-10T12:00:00Z"
         '400': { $ref: '#/components/responses/BadRequestError' }
         '401': { $ref: '#/components/responses/UnauthorizedError' }
-        '403': { $ref: '#/components/responses/ForbiddenRoleError' }
+        '403': { $ref: '#/components/responses/ForbiddenErrors' }
+        '404': { $ref: '#/components/responses/NotFoundError' }
 
   /heritage/documents:
     get:
       tags: [Heritage]
-      summary: "Lấy danh sách tài liệu lịch sử (FR-HER-01/05)"
+      summary: "Lấy danh sách tài liệu lịch sử (FR-HER-01)"
+      operationId: getDocuments
       x-roles: [MEMBER, BRANCH_ADMIN, SYSTEM_ADMIN]
+      parameters:
+        - name: page
+          in: query
+          schema: { type: integer, default: 0 }
+        - name: size
+          in: query
+          schema: { type: integer, default: 20, maximum: 100 }
+        - name: sort
+          in: query
+          schema: { type: string, default: "createdAt,desc" }
       responses:
         '200':
-          description: "Lấy danh sách thành công"
+          description: "Thành công"
           content:
             application/json:
               schema:
@@ -132,40 +247,175 @@ paths:
                   data:
                     type: array
                     items: { $ref: '#/components/schemas/HeritageDocumentResponse' }
+                  meta: { $ref: '#/components/schemas/PaginationMeta' }
+              example:
+                success: true
+                data:
+                  - id: "111e4567-e89b-12d3-a456-426614174333"
+                    title: "Sắc phong thời vua Tự Đức"
+                    description: "Bản sao lưu trữ sắc phong"
+                    category: "sac-phong"
+                    contentUrl: "/media/c2a85d34-4a2e-4b20-b851-d41a7d188092/content"
+                    createdAt: "2026-10-09T10:00:00Z"
+                    updatedAt: "2026-10-09T10:00:00Z"
+                meta:
+                  page: 0
+                  size: 20
+                  total: 1
         '401': { $ref: '#/components/responses/UnauthorizedError' }
         '403': { $ref: '#/components/responses/ForbiddenFamilyError' }
     post:
       tags: [Heritage]
-      summary: "Thêm tài liệu lịch sử dòng họ (UC-HER-01)"
-      description: "Thêm tài liệu mới. media_id phải tồn tại trong bảng media của module community."
+      summary: "Thêm tài liệu (UC-HER-01)"
+      operationId: createDocument
       x-roles: [MEMBER, BRANCH_ADMIN, SYSTEM_ADMIN]
       requestBody:
         required: true
         content:
           application/json:
             schema: { $ref: '#/components/schemas/CreateHeritageDocumentRequest' }
+            example:
+              title: "Gia phả đời thứ 3"
+              description: "Bản số hóa"
+              category: "gia-pha"
+              mediaId: "d3a85d34-4a2e-4b20-b851-d41a7d188111"
       responses:
         '201':
-          description: "Tạo tài liệu thành công"
+          description: "Tạo thành công"
           content:
             application/json:
               schema:
                 type: object
                 properties:
                   success: { type: boolean, example: true }
-                  data:
-                    type: object
-                    properties:
-                      id: { type: string, format: uuid }
+                  data: { $ref: '#/components/schemas/HeritageDocumentResponse' }
+              example:
+                success: true
+                data:
+                  id: "111e4567-e89b-12d3-a456-426614174333"
+                  title: "Gia phả đời thứ 3"
+                  description: "Bản số hóa"
+                  category: "gia-pha"
+                  contentUrl: "/media/d3a85d34-4a2e-4b20-b851-d41a7d188111/content"
+                  createdAt: "2026-10-09T15:00:00Z"
+                  updatedAt: "2026-10-09T15:00:00Z"
         '400': { $ref: '#/components/responses/BadRequestError' }
         '401': { $ref: '#/components/responses/UnauthorizedError' }
+        '403': { $ref: '#/components/responses/ForbiddenErrors' }
+
+  /heritage/documents/{id}:
+    get:
+      tags: [Heritage]
+      summary: "Xem chi tiết tài liệu"
+      operationId: getDocumentDetails
+      x-roles: [MEMBER, BRANCH_ADMIN, SYSTEM_ADMIN]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: "Thành công"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean, example: true }
+                  data: { $ref: '#/components/schemas/HeritageDocumentResponse' }
+              example:
+                success: true
+                data:
+                  id: "111e4567-e89b-12d3-a456-426614174333"
+                  title: "Gia phả đời thứ 3"
+                  description: "Bản số hóa"
+                  category: "gia-pha"
+                  contentUrl: "/media/d3a85d34-4a2e-4b20-b851-d41a7d188111/content"
+                  createdAt: "2026-10-09T15:00:00Z"
+                  updatedAt: "2026-10-09T15:00:00Z"
+        '401': { $ref: '#/components/responses/UnauthorizedError' }
         '403': { $ref: '#/components/responses/ForbiddenFamilyError' }
+        '404': { $ref: '#/components/responses/NotFoundError' }
+    patch:
+      tags: [Heritage]
+      summary: "Sửa tài liệu lịch sử (UC-HER-01)"
+      operationId: updateDocument
+      x-roles: [MEMBER, BRANCH_ADMIN, SYSTEM_ADMIN]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title: { type: string }
+                description: { type: string }
+                category: { type: string }
+            example:
+              title: "Gia phả đời thứ 3 (Cập nhật)"
+      responses:
+        '200':
+          description: "Thành công"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean, example: true }
+                  data: { $ref: '#/components/schemas/HeritageDocumentResponse' }
+              example:
+                success: true
+                data:
+                  id: "111e4567-e89b-12d3-a456-426614174333"
+                  title: "Gia phả đời thứ 3 (Cập nhật)"
+                  description: "Bản số hóa"
+                  category: "gia-pha"
+                  contentUrl: "/media/d3a85d34-4a2e-4b20-b851-d41a7d188111/content"
+                  createdAt: "2026-10-09T15:00:00Z"
+                  updatedAt: "2026-10-09T16:00:00Z"
+        '400': { $ref: '#/components/responses/BadRequestError' }
+        '401': { $ref: '#/components/responses/UnauthorizedError' }
+        '403': { $ref: '#/components/responses/ForbiddenErrors' }
+        '404': { $ref: '#/components/responses/NotFoundError' }
+    delete:
+      tags: [Heritage]
+      summary: "Xóa tài liệu lịch sử (UC-HER-01)"
+      operationId: deleteDocument
+      x-roles: [MEMBER, BRANCH_ADMIN, SYSTEM_ADMIN]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '204':
+          description: "Xóa thành công"
+        '401': { $ref: '#/components/responses/UnauthorizedError' }
+        '403': { $ref: '#/components/responses/ForbiddenErrors' }
+        '404': { $ref: '#/components/responses/NotFoundError' }
 
   /heritage/stories:
     get:
       tags: [Heritage]
-      summary: "Xem danh sách câu chuyện gia đình (UC-HER-02)"
+      summary: "Danh sách câu chuyện (UC-HER-02)"
+      operationId: getStories
       x-roles: [MEMBER, BRANCH_ADMIN, SYSTEM_ADMIN]
+      parameters:
+        - name: page
+          in: query
+          schema: { type: integer, default: 0 }
+        - name: size
+          in: query
+          schema: { type: integer, default: 20, maximum: 100 }
+        - name: sort
+          in: query
+          schema: { type: string, default: "createdAt,desc" }
       responses:
         '200':
           description: "Thành công"
@@ -178,30 +428,170 @@ paths:
                   data:
                     type: array
                     items: { $ref: '#/components/schemas/FamilyStoryResponse' }
+                  meta: { $ref: '#/components/schemas/PaginationMeta' }
+              example:
+                success: true
+                data:
+                  - id: "222e4567-e89b-12d3-a456-426614174444"
+                    title: "Ký ức làng xưa"
+                    content: "Nội dung hồi ức..."
+                    authorName: "Nguyễn Văn Bình"
+                    createdAt: "2026-10-09T10:00:00Z"
+                    updatedAt: "2026-10-09T10:00:00Z"
+                meta:
+                  page: 0
+                  size: 20
+                  total: 1
         '401': { $ref: '#/components/responses/UnauthorizedError' }
+        '403': { $ref: '#/components/responses/ForbiddenFamilyError' }
     post:
       tags: [Heritage]
-      summary: "Đăng tải câu chuyện gia đình (UC-HER-02)"
+      summary: "Đăng tải câu chuyện (UC-HER-02)"
+      operationId: createStory
       x-roles: [MEMBER, BRANCH_ADMIN, SYSTEM_ADMIN]
       requestBody:
         required: true
         content:
           application/json:
             schema: { $ref: '#/components/schemas/CreateFamilyStoryRequest' }
+            example:
+              title: "Ngày giỗ tổ năm 2026"
+              content: "Hôm nay toàn họ tụ tập đông đủ..."
       responses:
         '201':
-          description: "Đăng câu chuyện thành công"
+          description: "Đăng thành công"
           content:
             application/json:
-              schema: { $ref: '#/components/schemas/ActionSuccessResponse' }
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean, example: true }
+                  data: { $ref: '#/components/schemas/FamilyStoryResponse' }
+              example:
+                success: true
+                data:
+                  id: "222e4567-e89b-12d3-a456-426614174444"
+                  title: "Ngày giỗ tổ năm 2026"
+                  content: "Hôm nay toàn họ tụ tập đông đủ..."
+                  authorName: "Huy Quốc"
+                  createdAt: "2026-10-09T16:00:00Z"
+                  updatedAt: "2026-10-09T16:00:00Z"
         '400': { $ref: '#/components/responses/BadRequestError' }
         '401': { $ref: '#/components/responses/UnauthorizedError' }
+        '403': { $ref: '#/components/responses/ForbiddenErrors' }
+
+  /heritage/stories/{id}:
+    get:
+      tags: [Heritage]
+      summary: "Chi tiết câu chuyện"
+      operationId: getStoryDetails
+      x-roles: [MEMBER, BRANCH_ADMIN, SYSTEM_ADMIN]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: "Thành công"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean, example: true }
+                  data: { $ref: '#/components/schemas/FamilyStoryResponse' }
+              example:
+                success: true
+                data:
+                  id: "222e4567-e89b-12d3-a456-426614174444"
+                  title: "Ngày giỗ tổ năm 2026"
+                  content: "Hôm nay toàn họ tụ tập đông đủ..."
+                  authorName: "Huy Quốc"
+                  createdAt: "2026-10-09T16:00:00Z"
+                  updatedAt: "2026-10-09T16:00:00Z"
+        '401': { $ref: '#/components/responses/UnauthorizedError' }
+        '403': { $ref: '#/components/responses/ForbiddenFamilyError' }
+        '404': { $ref: '#/components/responses/NotFoundError' }
+    patch:
+      tags: [Heritage]
+      summary: "Sửa câu chuyện (UC-HER-02)"
+      operationId: updateStory
+      x-roles: [MEMBER, BRANCH_ADMIN, SYSTEM_ADMIN]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title: { type: string }
+                content: { type: string }
+                relatedPersonId: { type: string, format: uuid, nullable: true }
+            example:
+              title: "Ngày giỗ tổ năm 2026 (Chỉnh sửa)"
+      responses:
+        '200':
+          description: "Sửa thành công"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean, example: true }
+                  data: { $ref: '#/components/schemas/FamilyStoryResponse' }
+              example:
+                success: true
+                data:
+                  id: "222e4567-e89b-12d3-a456-426614174444"
+                  title: "Ngày giỗ tổ năm 2026 (Chỉnh sửa)"
+                  content: "Hôm nay toàn họ tụ tập đông đủ..."
+                  authorName: "Huy Quốc"
+                  createdAt: "2026-10-09T16:00:00Z"
+                  updatedAt: "2026-10-09T17:00:00Z"
+        '400': { $ref: '#/components/responses/BadRequestError' }
+        '401': { $ref: '#/components/responses/UnauthorizedError' }
+        '403': { $ref: '#/components/responses/ForbiddenErrors' }
+        '404': { $ref: '#/components/responses/NotFoundError' }
+    delete:
+      tags: [Heritage]
+      summary: "Xóa câu chuyện (UC-HER-02)"
+      operationId: deleteStory
+      x-roles: [MEMBER, BRANCH_ADMIN, SYSTEM_ADMIN]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '204':
+          description: "Xóa thành công"
+        '401': { $ref: '#/components/responses/UnauthorizedError' }
+        '403': { $ref: '#/components/responses/ForbiddenErrors' }
+        '404': { $ref: '#/components/responses/NotFoundError' }
 
   /heritage/photos:
     get:
       tags: [Heritage]
       summary: "Xem thư viện ảnh dòng họ (UC-HER-03)"
+      description: "Đọc ảnh có owner_type = 'HERITAGE' qua interface community."
+      operationId: getHeritagePhotos
       x-roles: [MEMBER, BRANCH_ADMIN, SYSTEM_ADMIN]
+      parameters:
+        - name: page
+          in: query
+          schema: { type: integer, default: 0 }
+        - name: size
+          in: query
+          schema: { type: integer, default: 20, maximum: 100 }
+        - name: sort
+          in: query
+          schema: { type: string, default: "createdAt,desc" }
       responses:
         '200':
           description: "Thành công"
@@ -214,36 +604,38 @@ paths:
                   data:
                     type: array
                     items: { $ref: '#/components/schemas/PhotoItemResponse' }
+                  meta: { $ref: '#/components/schemas/PaginationMeta' }
+              example:
+                success: true
+                data:
+                  - id: "333e4567-e89b-12d3-a456-426614174555"
+                    mediaId: "f4b85d34-4a2e-4b20-b851-d41a7d188999"
+                    contentUrl: "/media/f4b85d34-4a2e-4b20-b851-d41a7d188999/content"
+                    caption: "Ảnh nhà thờ họ"
+                    createdAt: "2026-10-09T10:00:00Z"
+                meta:
+                  page: 0
+                  size: 20
+                  total: 1
         '401': { $ref: '#/components/responses/UnauthorizedError' }
-    post:
-      tags: [Heritage]
-      summary: "Lưu ảnh vào thư viện di sản (UC-HER-03)"
-      description: "Lưu liên kết media_id vào danh mục thư viện ảnh dòng họ"
-      x-roles: [MEMBER, BRANCH_ADMIN, SYSTEM_ADMIN]
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [media_id]
-              properties:
-                media_id: { type: string, format: uuid }
-                caption: { type: string }
-      responses:
-        '201':
-          description: "Thêm ảnh thành công"
-          content:
-            application/json:
-              schema: { $ref: '#/components/schemas/ActionSuccessResponse' }
-        '400': { $ref: '#/components/responses/BadRequestError' }
-        '500': { $ref: '#/components/responses/InternalServerError' }
+        '403': { $ref: '#/components/responses/ForbiddenFamilyError' }
 
   /heritage/outstanding-members:
     get:
       tags: [Heritage]
-      summary: "Xem danh sách người tiêu biểu (UC-HER-04)"
+      summary: "Danh sách người tiêu biểu (UC-HER-04)"
+      operationId: getOutstandingMembers
       x-roles: [MEMBER, BRANCH_ADMIN, SYSTEM_ADMIN]
+      parameters:
+        - name: page
+          in: query
+          schema: { type: integer, default: 0 }
+        - name: size
+          in: query
+          schema: { type: integer, default: 20, maximum: 100 }
+        - name: sort
+          in: query
+          schema: { type: string, default: "displayOrder,asc" }
       responses:
         '200':
           description: "Thành công"
@@ -256,38 +648,134 @@ paths:
                   data:
                     type: array
                     items: { $ref: '#/components/schemas/OutstandingMemberResponse' }
+                  meta: { $ref: '#/components/schemas/PaginationMeta' }
+              example:
+                success: true
+                data:
+                  - id: "444e4567-e89b-12d3-a456-426614174666"
+                    personId: "123e4567-e89b-12d3-a456-426614174000"
+                    fullName: "Nguyễn Văn C"
+                    achievement: "Huân chương lao động"
+                    displayOrder: 1
+                    createdAt: "2026-10-09T10:00:00Z"
+                    updatedAt: "2026-10-09T10:00:00Z"
+                meta:
+                  page: 0
+                  size: 20
+                  total: 1
         '401': { $ref: '#/components/responses/UnauthorizedError' }
+        '403': { $ref: '#/components/responses/ForbiddenFamilyError' }
     post:
       tags: [Heritage]
-      summary: "Thêm người tiêu biểu của dòng họ (UC-HER-04)"
+      summary: "Thêm người tiêu biểu (UC-HER-04)"
+      operationId: createOutstandingMember
       x-roles: [BRANCH_ADMIN, SYSTEM_ADMIN]
       requestBody:
         required: true
         content:
           application/json:
             schema: { $ref: '#/components/schemas/CreateOutstandingMemberRequest' }
+            example:
+              personId: "123e4567-e89b-12d3-a456-426614174000"
+              achievement: "Đậu thủ khoa đại học"
+              displayOrder: 2
       responses:
         '201':
-          description: "Thêm thành công"
+          description: "Thành công"
           content:
             application/json:
-              schema: { $ref: '#/components/schemas/ActionSuccessResponse' }
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean, example: true }
+                  data: { $ref: '#/components/schemas/OutstandingMemberResponse' }
+              example:
+                success: true
+                data:
+                  id: "444e4567-e89b-12d3-a456-426614174666"
+                  personId: "123e4567-e89b-12d3-a456-426614174000"
+                  fullName: "Nguyễn Văn C"
+                  achievement: "Đậu thủ khoa đại học"
+                  displayOrder: 2
+                  createdAt: "2026-10-09T16:00:00Z"
+                  updatedAt: "2026-10-09T16:00:00Z"
         '400': { $ref: '#/components/responses/BadRequestError' }
         '401': { $ref: '#/components/responses/UnauthorizedError' }
-        '403': { $ref: '#/components/responses/ForbiddenRoleError' }
+        '403': { $ref: '#/components/responses/ForbiddenErrors' }
+        '409': { $ref: '#/components/responses/ConflictError' }
+
+  /heritage/outstanding-members/{id}:
+    patch:
+      tags: [Heritage]
+      summary: "Sửa người tiêu biểu (UC-HER-04)"
+      operationId: updateOutstandingMember
+      x-roles: [BRANCH_ADMIN, SYSTEM_ADMIN]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/UpdateOutstandingMemberRequest' }
+            example:
+              displayOrder: 1
+      responses:
+        '200':
+          description: "Thành công"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean, example: true }
+                  data: { $ref: '#/components/schemas/OutstandingMemberResponse' }
+              example:
+                success: true
+                data:
+                  id: "444e4567-e89b-12d3-a456-426614174666"
+                  personId: "123e4567-e89b-12d3-a456-426614174000"
+                  fullName: "Nguyễn Văn C"
+                  achievement: "Đậu thủ khoa đại học"
+                  displayOrder: 1
+                  createdAt: "2026-10-09T16:00:00Z"
+                  updatedAt: "2026-10-09T16:30:00Z"
+        '400': { $ref: '#/components/responses/BadRequestError' }
+        '401': { $ref: '#/components/responses/UnauthorizedError' }
+        '403': { $ref: '#/components/responses/ForbiddenErrors' }
+        '404': { $ref: '#/components/responses/NotFoundError' }
+    delete:
+      tags: [Heritage]
+      summary: "Xóa người tiêu biểu (UC-HER-04)"
+      operationId: deleteOutstandingMember
+      x-roles: [BRANCH_ADMIN, SYSTEM_ADMIN]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '204':
+          description: "Xóa thành công"
+        '401': { $ref: '#/components/responses/UnauthorizedError' }
+        '403': { $ref: '#/components/responses/ForbiddenErrors' }
+        '404': { $ref: '#/components/responses/NotFoundError' }
 
   /dashboard/statistics:
     get:
       tags: [Dashboard]
-      summary: "Lấy chỉ số thống kê tổng quan (UC-DSH-01)"
-      description: |
-        Truy vấn toàn bộ các chỉ số nhân khẩu, hoạt động cộng đồng và sự kiện sắp tới.
-        x-sql-members: SELECT COUNT(*) FROM person WHERE family_id = :familyId AND deleted_at IS NULL;
-        x-sql-upcoming: SELECT id, title, start_time FROM event WHERE family_id = :familyId AND deleted_at IS NULL AND start_time >= NOW() ORDER BY start_time ASC LIMIT 5;
+      summary: "Lấy chỉ số thống kê (UC-DSH-01)"
+      operationId: getDashboardStats
       x-roles: [MEMBER, BRANCH_ADMIN, SYSTEM_ADMIN]
+      parameters:
+        - name: branchId
+          in: query
+          schema: { type: string, format: uuid }
       responses:
         '200':
-          description: "Lấy chỉ số thành công"
+          description: "Thành công"
           content:
             application/json:
               schema:
@@ -295,33 +783,66 @@ paths:
                 properties:
                   success: { type: boolean, example: true }
                   data: { $ref: '#/components/schemas/DashboardStatisticsData' }
+              example:
+                success: true
+                data:
+                  totalMembers: 128
+                  generationStats:
+                    - generation: 1
+                      count: 2
+                    - generation: 2
+                      count: 10
+                  genderStats:
+                    MALE: 68
+                    FEMALE: 60
+                    OTHER: 0
+                  professionStats:
+                    - jobTitle: "Kỹ sư"
+                      count: 15
+                  locationStats:
+                    - location: "Hà Nội"
+                      count: 45
+                  weeklyPosts:
+                    - weekStart: "2026-10-05T00:00:00Z"
+                      postCount: 8
+                  upcomingEvents:
+                    - id: "555e4567-e89b-12d3-a456-426614174777"
+                      title: "Lễ giỗ Tổ họ Nguyễn"
+                      startAt: "2026-11-15T08:00:00Z"
         '401': { $ref: '#/components/responses/UnauthorizedError' }
-        '403': { $ref: '#/components/responses/ForbiddenFamilyError' }
+        '403': { $ref: '#/components/responses/ForbiddenErrors' }
 
-  /dashboard/export/csv:
+  /dashboard/reports/members:
     get:
       tags: [Dashboard]
-      summary: "Xuất dữ liệu báo cáo nhân khẩu học định dạng CSV (UC-DSH-02)"
+      summary: "Xuất báo cáo nhân khẩu học CSV (UC-DSH-02)"
+      operationId: exportMembersCSV
       x-roles: [BRANCH_ADMIN, SYSTEM_ADMIN]
+      parameters:
+        - name: format
+          in: query
+          schema: { type: string, enum: [csv] }
       responses:
         '200':
           description: "Tải file CSV thành công"
+          headers:
+            Content-Type:
+              schema: { type: string, example: "text/csv; charset=UTF-8" }
+            Content-Disposition:
+              schema: { type: string, example: "attachment; filename=\"members-20261009.csv\"" }
           content:
             text/csv:
-              schema:
-                type: string
-                example: "id,full_name,generation,gender,job_title,location\n1,Nguyen Van A,2,MALE,Engineer,Hanoi"
+              schema: { type: string }
+              example: "id,fullName,birthYear,gender,relationship,generation,jobTitle,workLocation\n123e4567-e89b-12d3-a456-426614174000,Nguyễn Văn An,1990,MALE,Con trai,4,Kỹ sư,Hà Nội\n5b0f2f6e-8d3a-4c1e-9a52-7e1d3c4b9a10,Nguyễn Bảo Na,2014,,Cháu nội,,,"
         '401': { $ref: '#/components/responses/UnauthorizedError' }
-        '403': { $ref: '#/components/responses/ForbiddenRoleError' }
+        '403': { $ref: '#/components/responses/ForbiddenErrors' }
 
 components:
   securitySchemes:
-    BearerAuth:
+    bearerAuth:
       type: http
       scheme: bearer
       bearerFormat: JWT
-      description: "Cung cấp access token định dạng Bearer JWT"
-
   schemas:
     PaginationMeta:
       type: object
@@ -329,222 +850,274 @@ components:
         page: { type: integer, example: 0 }
         size: { type: integer, example: 20 }
         total: { type: integer, example: 100 }
-
-    ActionSuccessResponse:
-      type: object
-      properties:
-        success: { type: boolean, example: true }
-        data:
-          type: object
-          properties:
-            message: { type: string, example: "Thao tác thành công" }
-
     PersonSearchResult:
       type: object
       properties:
         id: { type: string, format: uuid }
-        full_name: { type: string, example: "Nguyễn Văn An" }
-        relationship: { type: string, example: "Cháu đích tôn" }
-        birth_year: { type: integer, example: 2012 }
+        fullName: { type: string, example: "Nguyễn Văn An" }
+        relationship: { type: string, description: "Tính qua thuật toán SCRUM-19; trẻ dưới 16 tuổi vẫn hiện", example: "Cháu đích tôn" }
+        birthYear: { type: integer, example: 2012 }
         generation: { type: integer, example: 4 }
-        job_title: { type: string, nullable: true, example: null, description: "Null nếu < 16 tuổi" }
-        location: { type: string, nullable: true, example: null, description: "Null nếu < 16 tuổi" }
-
+        jobTitle: { type: string, nullable: true, example: null }
+        location: { type: string, nullable: true, example: null }
     ProfessionProfileRequest:
       type: object
-      required: [job_title]
+      required: [jobTitle]
       properties:
-        job_title: { type: string, example: "Chuyên viên phân tích dữ liệu" }
-        company: { type: string, example: "Tập đoàn FPT" }
-        location: { type: string, example: "TP. Hồ Chí Minh" }
-
+        jobTitle: { type: string, example: "Chuyên viên dữ liệu" }
+        company: { type: string, example: "FPT" }
+        workLocation: { type: string, example: "Hà Nội" }
+    ProfessionProfileData:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        jobTitle: { type: string }
+        company: { type: string }
+        workLocation: { type: string }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
     EducationProfileRequest:
       type: object
-      required: [school, graduation_year]
+      required: [school]
       properties:
         school: { type: string, example: "Đại học Bách Khoa" }
-        degree: { type: string, example: "Kỹ sư Công nghệ thông tin" }
-        graduation_year: { type: integer, minimum: 1900, maximum: 2100, example: 2024 }
-
+        degree: { type: string, example: "Kỹ sư" }
+        graduationYear: { type: integer, example: 2024 }
+    EducationProfileData:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        school: { type: string }
+        degree: { type: string }
+        graduationYear: { type: integer }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
     CreateHeritageDocumentRequest:
       type: object
-      required: [title, media_id]
+      required: [title, mediaId]
       properties:
-        title: { type: string, example: "Sắc phong thời vua Tự Đức" }
-        description: { type: string, example: "Bản sao lưu trữ sắc phong đời thứ 5" }
-        media_id: { type: string, format: uuid, example: "c2a85d34-4a2e-4b20-b851-d41a7d188092" }
-
+        title: { type: string, example: "Sắc phong thời Tự Đức" }
+        description: { type: string, example: "Bản sao lưu trữ" }
+        category: { type: string, example: "sac-phong" }
+        mediaId: { type: string, format: uuid }
     HeritageDocumentResponse:
       type: object
       properties:
         id: { type: string, format: uuid }
         title: { type: string }
         description: { type: string }
-        media_url: { type: string, example: "https://cdn.familyconnect.vn/media/sac-phong.pdf" }
-        created_at: { type: string, format: date-time }
-
+        category: { type: string }
+        contentUrl: { type: string, example: "/media/123e4567-e89b-12d3-a456-426614174333/content" }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
     CreateFamilyStoryRequest:
       type: object
       required: [title, content]
       properties:
-        title: { type: string, example: "Ký ức ngày dời làng năm 1975" }
-        content: { type: string, example: "Nội dung hồi ức của các cụ tiền bối..." }
-
+        title: { type: string, example: "Ký ức làng xưa" }
+        content: { type: string, example: "Nội dung hồi ức..." }
+        relatedPersonId: { type: string, format: uuid, nullable: true }
     FamilyStoryResponse:
       type: object
       properties:
         id: { type: string, format: uuid }
         title: { type: string }
         content: { type: string }
-        author_name: { type: string, example: "Nguyễn Văn Bình" }
-        created_at: { type: string, format: date-time }
-
+        authorName: { type: string, example: "Nguyễn Văn Bình" }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
     PhotoItemResponse:
       type: object
       properties:
         id: { type: string, format: uuid }
-        media_id: { type: string, format: uuid }
-        image_url: { type: string, example: "https://cdn.familyconnect.vn/media/anh-ho.jpg" }
+        mediaId: { type: string, format: uuid }
+        contentUrl: { type: string, example: "/media/456e4567-e89b-12d3-a456-426614174333/content" }
         caption: { type: string }
-
+        createdAt: { type: string, format: date-time }
     CreateOutstandingMemberRequest:
       type: object
-      required: [person_id, achievement]
+      required: [personId, achievement]
       properties:
-        person_id: { type: string, format: uuid }
-        achievement: { type: string, example: "Nhận Huân chương Lao động hạng Nhất" }
-        display_order: { type: integer, default: 0 }
-
+        personId: { type: string, format: uuid }
+        achievement: { type: string, example: "Huân chương lao động" }
+        displayOrder: { type: integer, default: 0 }
+    UpdateOutstandingMemberRequest:
+      type: object
+      properties:
+        achievement: { type: string }
+        displayOrder: { type: integer }
     OutstandingMemberResponse:
       type: object
       properties:
         id: { type: string, format: uuid }
-        person_id: { type: string, format: uuid }
-        full_name: { type: string, example: "Nguyễn Văn C" }
+        personId: { type: string, format: uuid }
+        fullName: { type: string, example: "Nguyễn Văn C" }
         achievement: { type: string }
-        display_order: { type: integer }
-
+        displayOrder: { type: integer }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
     DashboardStatisticsData:
       type: object
       properties:
-        total_members: { type: integer, example: 128 }
-        generation_stats:
+        totalMembers: { type: integer, example: 128 }
+        generationStats:
           type: array
           items:
             type: object
             properties:
-              generation: { type: integer, example: 1 }
-              count: { type: integer, example: 12 }
-        gender_stats:
+              generation: { type: integer }
+              count: { type: integer }
+        genderStats:
           type: object
           properties:
             MALE: { type: integer, example: 68 }
             FEMALE: { type: integer, example: 60 }
-        profession_stats:
+            OTHER: { type: integer, example: 0 }
+        professionStats:
           type: array
           items:
             type: object
             properties:
-              job_title: { type: string, example: "Kỹ sư" }
-              count: { type: integer, example: 15 }
-        location_stats:
+              jobTitle: { type: string }
+              count: { type: integer }
+        locationStats:
           type: array
           items:
             type: object
             properties:
-              location: { type: string, example: "Hà Nội" }
-              count: { type: integer, example: 45 }
-        weekly_posts:
+              location: { type: string }
+              count: { type: integer }
+        weeklyPosts:
           type: array
           items:
             type: object
             properties:
-              week_start: { type: string, format: date-time }
-              post_count: { type: integer, example: 8 }
-        upcoming_events:
+              weekStart: { type: string, format: date-time }
+              postCount: { type: integer }
+        upcomingEvents:
           type: array
           items:
             type: object
             properties:
               id: { type: string, format: uuid }
-              title: { type: string, example: "Lễ giỗ Tổ họ Nguyễn" }
-              start_time: { type: string, format: date-time, example: "2026-11-15T08:00:00+07:00" }
-
+              title: { type: string }
+              startAt: { type: string, format: date-time }
+    ErrorResponseBase:
+      type: object
+      properties:
+        success: { type: boolean, example: false }
+        error:
+          type: object
+          properties:
+            code: { type: string }
+            message: { type: string }
+            details:
+              type: array
+              items:
+                type: object
+                properties:
+                  field: { type: string }
+                  message: { type: string }
+              nullable: true
   responses:
     BadRequestError:
-      description: "Dữ liệu yêu cầu không hợp lệ"
+      description: "Dữ liệu không hợp lệ"
       content:
         application/json:
-          schema:
-            type: object
-            properties:
-              success: { type: boolean, example: false }
-              error:
-                type: object
-                properties:
-                  code: { type: string, example: "VALID_001" }
-                  message: { type: string, example: "Dữ liệu không hợp lệ" }
-                  details:
-                    type: array
-                    items: { type: string }
-                    example: ["title không được để trống", "media_id không tồn tại"]
-
+          schema: { $ref: '#/components/schemas/ErrorResponseBase' }
+          example:
+            success: false
+            error:
+              code: "VALID_001"
+              message: "Dữ liệu yêu cầu không hợp lệ"
+              details:
+                - field: "title"
+                  message: "Không được để trống"
     UnauthorizedError:
-      description: "Chưa đăng nhập hoặc token không hợp lệ"
+      description: "Chưa đăng nhập hoặc token hết hạn"
       content:
         application/json:
-          schema:
-            type: object
-            properties:
-              success: { type: boolean, example: false }
-              error:
-                type: object
-                properties:
-                  code: { type: string, example: "AUTH_002" }
-                  message: { type: string, example: "Token hết hạn hoặc không hợp lệ" }
-                  details: { type: array, items: { type: string }, example: [] }
-
-    ForbiddenRoleError:
-      description: "Không đủ quyền truy cập (yêu cầu ADMIN)"
-      content:
-        application/json:
-          schema:
-            type: object
-            properties:
-              success: { type: boolean, example: false }
-              error:
-                type: object
-                properties:
-                  code: { type: string, example: "PERM_001" }
-                  message: { type: string, example: "Không đủ quyền truy cập tính năng này" }
-                  details: { type: array, items: { type: string }, example: [] }
-
+          schema: { $ref: '#/components/schemas/ErrorResponseBase' }
+          example:
+            success: false
+            error:
+              code: "AUTH_002"
+              message: "Token không hợp lệ hoặc đã hết hạn"
+              details: null
     ForbiddenFamilyError:
       description: "Chưa được xác minh vào gia đình"
       content:
         application/json:
-          schema:
-            type: object
-            properties:
-              success: { type: boolean, example: false }
-              error:
-                type: object
-                properties:
-                  code: { type: string, example: "PERM_002" }
-                  message: { type: string, example: "Chưa được duyệt vào gia đình hoặc bị từ chối" }
-                  details: { type: array, items: { type: string }, example: [] }
-
-    InternalServerError:
-      description: "Lỗi nội bộ hệ thống"
+          schema: { $ref: '#/components/schemas/ErrorResponseBase' }
+          example:
+            success: false
+            error:
+              code: "PERM_002"
+              message: "Chưa được duyệt vào gia đình"
+              details: null
+    ForbiddenErrors:
+      description: "Lỗi quyền thao tác (PERM_001) hoặc Chưa xác minh (PERM_002)"
       content:
         application/json:
-          schema:
-            type: object
-            properties:
-              success: { type: boolean, example: false }
-              error:
-                type: object
-                properties:
-                  code: { type: string, example: "SYS_001" }
-                  message: { type: string, example: "Lỗi hệ thống trong quá trình xử lý" }
-                  details: { type: array, items: { type: string }, example: [] }
+          schema: { $ref: '#/components/schemas/ErrorResponseBase' }
+          examples:
+            ForbiddenRole:
+              summary: "Không đủ quyền hoặc sai chi họ (PERM_001)"
+              value:
+                success: false
+                error:
+                 ForbiddenFamilyError:
+      description: "Chưa được xác minh vào gia đình"
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorResponseBase' }
+          example:
+            success: false
+            error:
+              code: "PERM_002"
+              message: "Chưa được duyệt vào gia đình"
+              details: null
+    ForbiddenErrors:
+      description: "Lỗi quyền thao tác (PERM_001) hoặc Chưa xác minh (PERM_002)"
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorResponseBase' }
+          examples:
+            ForbiddenRole:
+              summary: "Không đủ quyền hoặc sai chi họ (PERM_001)"
+              value:
+                success: false
+                error:
+                  code: "PERM_001"
+                  message: "Không đủ quyền truy cập tính năng này"
+                  details: null
+            ForbiddenFamily:
+              summary: "Chưa xác minh gia đình (PERM_002)"
+              value:
+                success: false
+                error:
+                  code: "PERM_002"
+                  message: "Chưa được duyệt vào gia đình"
+                  details: null
+  NotFoundError:
+      description: "Không tìm thấy dữ liệu"
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorResponseBase' }
+          example:
+            success: false
+            error:
+              code: "NOT_FOUND_001"
+              message: "Tài nguyên không tồn tại"
+              details: null
+    ConflictError:
+      description: "Trùng lặp dữ liệu"
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorResponseBase' }
+          example:
+            success: false
+            error:
+              code: "HER_001"
+              message: "Thành viên đã tồn tại trong danh sách tiêu biểu"
+              details: null
