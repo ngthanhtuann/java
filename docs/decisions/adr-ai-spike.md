@@ -63,7 +63,7 @@ Chất lượng tiếng Việt: Chưa có bảng đánh giá 10 câu; bổ sung 
 1. **Số chiều vector.** `gemini-embedding-001` trả 3072 chiều mặc định, nhưng pgvector chỉ tạo được chỉ mục HNSW và IVFFlat cho kiểu `vector` tối đa 2000 chiều. Hai cách xử lý:
    - Chọn `outputDimensionality` 768 hoặc 1536 khi gọi API (đề xuất, vì nhẹ và đủ cho gia phả), hoặc
    - Dùng kiểu `halfvec(3072)` (chỉ mục tối đa 4000 chiều).
-   - **Quyết định cho thiết kế:** chưa chốt (768, 1536 hoặc `halfvec`); chốt ở SCRUM-34 và ghi vào `ai-rag.md`.
+   - **Quyết định cho thiết kế (đã chốt 9/10/2026):** dùng `outputDimensionality = 768`, cột `vector(768)` với chỉ mục HNSW. Lý do: nằm trong giới hạn 2000 chiều của chỉ mục, nhẹ nhất về lưu trữ và tốc độ, đủ cho dữ liệu gia phả cỡ vài trăm đến vài nghìn đoạn. SCRUM-34 ghi vào `ai-rag.md`; nếu bảng đánh giá 10 câu tiếng Việt ở Sprint 2 không đạt thì thử lại với 1536.
 2. **Tên bảng.** Bảng vector đặt là `ai_embedding_chunk` (tiền tố `ai_` theo `architecture.md` mục 7), không dùng `embedding_chunk`.
 
 ## 5. Rủi ro
@@ -88,4 +88,4 @@ Lý do sơ bộ: đã tích hợp được, đã đo thời gian tạo embedding
 ## 7. Việc tiếp theo
 
 - SCRUM-34: viết `ai-rag.md` (phân đoạn dữ liệu, prompt hệ thống, ngưỡng điểm, giới hạn, quyền dữ liệu) dựa trên quyết định này.
-- Bảng `ai_embedding_chunk` đưa vào ERD (SCRUM-28) với số chiều đã chốt.
+- Bảng `ai_embedding_chunk` đưa vào ERD (SCRUM-28) với cột `vector(768)`.

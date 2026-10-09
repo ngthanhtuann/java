@@ -58,7 +58,7 @@ Theo tài liệu SRS mục 3, các yêu cầu chức năng thuộc phạm vi 3 m
 | :--- | :--- |
 | **Mã UC / FR** | UC-HER-01 / FR-HER-01, FR-HER-05 |
 | **Actor** | BRANCH_ADMIN, SYSTEM_ADMIN (thêm, sửa, xóa); MEMBER (chỉ xem danh sách và chi tiết) |
-| **Tiền điều kiện** | File tải lên qua module Community (`POST /api/v1/media`, `ownerType = HERITAGE`), có `media_id` hợp lệ, thuộc cùng `family_id` của người dùng. Tệp tài liệu (`pdf`, tối đa 10 MB) và ảnh (`jpg`, `png`, `webp`, tối đa 5 MB) cùng lưu ở bảng `media` với `owner_type = HERITAGE`; việc cho phép `pdf` là đề xuất, chờ nhóm xác nhận ở họp Sprint 2 (`conventions.md` mục 7.3, BR-COM-08). |
+| **Tiền điều kiện** | File tải lên qua module Community (`POST /api/v1/media`, `ownerType = HERITAGE`), có `media_id` hợp lệ, thuộc cùng `family_id` của người dùng. Tệp tài liệu (`pdf`, tối đa 10 MB) và ảnh (`jpg`, `png`, `webp`, tối đa 5 MB) cùng lưu ở bảng `media` với `owner_type = HERITAGE`; việc cho phép `pdf` đã chốt 9/10/2026 (`conventions.md` mục 7.3, BR-COM-08). |
 | **Luồng chính** | 1. Thêm mới: Nhập Tiêu đề, Mô tả, Danh mục và `media_id`. Hệ thống kiểm tra `media_id` tồn tại và `media.family_id` trùng `family_id` của người dùng, sau đó ghi bản ghi vào `heritage_document`.<br>2. Sửa/Xóa: Hệ thống kiểm tra vai trò BRANCH_ADMIN hoặc SYSTEM_ADMIN trong gia đình của người dùng, rồi cập nhật/xóa mềm.<br>3. Báo module AI cập nhật embedding qua interface. |
 | **Luồng lỗi** | - MEMBER thêm/sửa/xóa, hoặc dùng `media_id` của gia đình khác: 403 PERM_001.<br>- Chưa xác minh: 403 PERM_002.<br>- Dữ liệu thiếu: 400 VALID_001.<br>- Không tìm thấy tài liệu: 404 NOT_FOUND_001. |
 | **Hậu điều kiện** | Tài liệu xuất hiện/được cập nhật/bị xóa trong kho lưu trữ số. |
@@ -157,11 +157,12 @@ API xóa trả `200` với `{ "success": true, "data": null }`, không dùng `20
 
 ### 3.4 Quyết định đã chốt và câu hỏi còn mở
 **Đã chốt**
-1. **Cách tính thế hệ:** theo `genealogy.md` mục 6.8 (đời 1 là người không có cha mẹ trong gia đình; người vào bằng hôn nhân lấy đời của vợ/chồng; lấy giá trị lớn nhất). Quy tắc lấy đời của vợ/chồng đang áp dụng tạm, chờ nhóm xác nhận (`genealogy.md` mục 11, câu 7). Dashboard và danh bạ lấy qua `GenealogyInterface.getDemographics()`, không tự viết truy vấn đệ quy riêng.
+1. **Cách tính thế hệ:** theo `genealogy.md` mục 6.8 (đời 1 là người không có cha mẹ trong gia đình; người vào bằng hôn nhân lấy đời của vợ/chồng; lấy giá trị lớn nhất). Quy tắc lấy đời của vợ/chồng đã chốt 9/10/2026 (`genealogy.md` mục 11, câu 7). Dashboard và danh bạ lấy qua `GenealogyInterface.getDemographics()`, không tự viết truy vấn đệ quy riêng.
 2. **Quyền của BRANCH_ADMIN với tài liệu chung:** có, theo `srs.md` ("Có (tất cả)"). Tài liệu lịch sử thuộc cả gia đình, không gắn chi.
+3. **Xóa tài liệu (9/10/2026):** xóa mềm `heritage_document` thì **giữ** tệp trong kho và giữ bản ghi `media` để khôi phục được.
 
-**Còn mở (cần nhóm xác nhận)**
-1. **Xóa tệp vật lý:** đề xuất khi xóa mềm `heritage_document` thì **giữ** tệp trong kho để khôi phục; việc dọn tệp mồ côi quyết định cùng spike lưu trữ ảnh (SCRUM-31).
+**Còn mở (quyết định ở SCRUM-31)**
+1. **Dọn tệp mồ côi:** thời điểm và cách xóa vật lý các tệp không còn bản ghi nào dùng được quyết định cùng spike lưu trữ ảnh (SCRUM-31).
 
 ## 4. THIẾT KẾ CƠ SỞ DỮ LIỆU
 *Quy ước chung: Khóa chính UUID. Các bảng có `id`, `created_at`, `updated_at`, `deleted_at`, `created_by` (NOT NULL), `updated_by` (NULL cho đến lần sửa đầu tiên, giống các module khác). Khóa ngoại chỉ dùng giữa các bảng trong cùng module (`architecture.md` mục 7, quyết định 9). Năm bảng dưới đây chỉ tham chiếu bảng của module khác (`users` của auth; `family`, `person` của genealogy; `media` của community) nên **không khai báo FK**: các cột này lưu UUID thường, có index, và service kiểm tra tồn tại, quyền và `family_id` qua interface Java của module tương ứng.*

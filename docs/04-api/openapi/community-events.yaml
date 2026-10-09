@@ -669,8 +669,8 @@ paths:
       description: Dùng cho ownerType HERITAGE hoặc PERSON; quyền trên tài nguyên
         sở hữu do module heritage/genealogy quyết định. Ảnh bài đăng và sự kiện dùng
         endpoint riêng. Định dạng nhận jpg, png, webp, tối đa 5 MB mỗi tệp. Riêng
-        ownerType HERITAGE cho phép thêm pdf, tối đa 10 MB mỗi tệp (đề xuất, chờ nhóm
-        xác nhận ở họp Sprint 2; xem conventions.md mục 7.3). Tổng request tối đa 10 MB.
+        ownerType HERITAGE cho phép thêm pdf, tối đa 10 MB mỗi tệp (xem conventions.md
+        mục 7.3). Tổng dung lượng tệp mỗi request tối đa 10 MB.
         Sai định dạng trả 415 FILE_002; quá kích thước trả 413 FILE_001.
       security:
       - bearerAuth: []
@@ -2123,6 +2123,7 @@ components:
       properties:
         content:
           type: string
+          maxLength: 5000
           example: Thông báo họp mặt gia đình cuối tuần
         type:
           type: string
@@ -2143,6 +2144,7 @@ components:
       properties:
         content:
           type: string
+          maxLength: 5000
           example: Cập nhật giờ họp mặt gia đình
         branchId:
           type: string
@@ -2154,6 +2156,7 @@ components:
       properties:
         content:
           type: string
+          maxLength: 1000
           example: Mình sẽ tham gia.
       additionalProperties: false
       required:
@@ -2177,9 +2180,11 @@ components:
       properties:
         title:
           type: string
+          maxLength: 255
           example: Lịch họp gia đình
         content:
           type: string
+          maxLength: 5000
           example: Cuộc họp bắt đầu lúc 9 giờ sáng Chủ nhật.
         branchId:
           type: string
@@ -2197,9 +2202,11 @@ components:
       properties:
         title:
           type: string
+          maxLength: 255
           example: Lịch họp gia đình (cập nhật)
         content:
           type: string
+          maxLength: 5000
           example: Cuộc họp bắt đầu lúc 10 giờ sáng Chủ nhật.
         branchId:
           type: string
@@ -2214,9 +2221,11 @@ components:
       properties:
         title:
           type: string
+          maxLength: 255
           example: Họp mặt gia đình
         description:
           type: string
+          maxLength: 5000
           example: Buổi gặp mặt thường niên
         startAt: *id001
         endAt:
@@ -2226,6 +2235,7 @@ components:
           example: '2026-10-10T12:00:00+07:00'
         location:
           type: string
+          maxLength: 255
           example: Nhà văn hóa
         branchId:
           type: string
@@ -2240,9 +2250,11 @@ components:
       properties:
         title:
           type: string
+          maxLength: 255
           example: Họp mặt gia đình (cập nhật)
         description:
           type: string
+          maxLength: 5000
           example: Nội dung đã cập nhật
         startAt: *id001
         endAt:
@@ -2251,6 +2263,7 @@ components:
           nullable: true
         location:
           type: string
+          maxLength: 255
         branchId:
           type: string
           format: uuid
@@ -2849,7 +2862,7 @@ components:
             success: false
             error:
               code: FILE_001
-              message: Tệp vượt kích thước cho phép 5 MB
+              message: Tệp vượt kích thước cho phép
               details: []
     UnsupportedFile:
       description: Chỉ hỗ trợ ảnh jpg, png, webp (và pdf khi ownerType là HERITAGE)

@@ -25,7 +25,7 @@ Module Community và Events cung cấp các chức năng phục vụ việc chia
 - Quyền tạo, sửa và xóa nội dung được kiểm tra theo vai trò và quyền của người dùng.
 - Người dùng chỉ được sửa hoặc xóa nội dung do mình tạo, hoặc nội dung mà vai trò của mình được phép quản lý.
 - Mọi truy vấn phải giới hạn theo `family_id` của người đăng nhập; không tin `family_id` do client gửi. Người dùng thuộc gia đình A gọi dữ liệu gia đình B phải bị từ chối (chống IDOR).
-- `branch_id = NULL` biểu thị phạm vi toàn gia đình; có `branch_id` thì nội dung thuộc phạm vi chi. Việc hiển thị cho chi con đang cần nhóm xác nhận.
+- `branch_id = NULL` biểu thị phạm vi toàn gia đình; có `branch_id` thì nội dung thuộc phạm vi chi. Nội dung có `branch_id` của chi X hiển thị cho thành viên thuộc chi X và các chi con của X (đi theo `branch.parent_branch_id`, cùng chiều với phạm vi quản lý của `BRANCH_ADMIN` ở BR-GEN-14); thành viên của chi cha hoặc chi khác nhánh không thấy. `BRANCH_ADMIN` quản lý cả gia đình và `SYSTEM_ADMIN` thấy tất cả. (Đã chốt 9/10/2026.)
 
 ### Phân trang
 
@@ -212,19 +212,19 @@ Sơ đồ thể hiện 4 actor theo hệ thống: `MEMBER`, `BRANCH_ADMIN`, `SYS
 |---|---|
 | BR-COM-01 | Chỉ thành viên đã đăng nhập và được xác minh mới được gọi các API yêu cầu quyền thành viên; người chưa xác minh nhận HTTP 403 với mã `PERM_002`. |
 | BR-COM-02 | Mọi truy vấn dữ liệu Community phải giới hạn theo `family_id` lấy từ ngữ cảnh người dùng đã đăng nhập; không tin `family_id` do client tự gửi. Yêu cầu truy cập dữ liệu của gia đình khác phải bị từ chối (chống IDOR). |
-| BR-COM-03 | `post`, `announcement` và `event` có `branch_id UUID NULL`: `NULL` là phạm vi toàn gia đình; có giá trị là phạm vi chi. Quyền truy cập chi con phải tuân theo cây chi và quyền thành viên đã được xác minh. |
+| BR-COM-03 | `post`, `announcement` và `event` có `branch_id UUID NULL`: `NULL` là phạm vi toàn gia đình; có giá trị là phạm vi chi. Nội dung có `branch_id` của chi X hiển thị cho thành viên thuộc chi X và các chi con của X (đi theo `branch.parent_branch_id`, cùng chiều với phạm vi quản lý của `BRANCH_ADMIN` ở BR-GEN-14); thành viên của chi cha hoặc chi khác nhánh không thấy. `BRANCH_ADMIN` quản lý cả gia đình và `SYSTEM_ADMIN` thấy tất cả. |
 | BR-COM-04 | `type=POST` cho phép MEMBER đã xác minh tạo bài thường; `type=NEWS` chỉ cho `BRANCH_ADMIN` trở lên. MEMBER không được đổi `type` khi PATCH bài đăng. |
 | BR-COM-05 | Chỉ người tạo được sửa bài. Xóa bài được phép với người tạo, `BRANCH_ADMIN` trong phạm vi chi, hoặc `SYSTEM_ADMIN` khi kiểm duyệt (FR-ADM-02); `BRANCH_ADMIN` chỉ gỡ bài thuộc chi mình quản lý, không phải quyền kiểm duyệt toàn hệ thống; xóa mềm qua `deleted_at`. |
-| BR-COM-06 | Thành viên chỉ được xem và bình luận trong phạm vi nội dung mình có quyền xem. Người dùng chỉ được sửa/xóa bình luận của chính mình; `BRANCH_ADMIN` (trong phạm vi chi mình quản lý) và `SYSTEM_ADMIN` (kiểm duyệt) có thể xóa bình luận vi phạm. Độ dài nội dung phải được kiểm tra ở backend; giới hạn số ký tự cụ thể cần thống nhất với SRS nếu chưa có. |
+| BR-COM-06 | Thành viên chỉ được xem và bình luận trong phạm vi nội dung mình có quyền xem. Người dùng chỉ được sửa/xóa bình luận của chính mình; `BRANCH_ADMIN` (trong phạm vi chi mình quản lý) và `SYSTEM_ADMIN` (kiểm duyệt) có thể xóa bình luận vi phạm. Độ dài nội dung được kiểm tra ở backend (đã chốt 9/10/2026): nội dung bài đăng, thông báo và mô tả sự kiện tối đa 5000 ký tự; bình luận tối đa 1000 ký tự; tiêu đề thông báo, tên sự kiện, địa điểm tối đa 255 ký tự (khớp kiểu `VARCHAR(255)`). Vượt giới hạn trả 400 `VALID_001`. |
 | BR-COM-07 | Mỗi người dùng chỉ có một reaction đang hoạt động trên mỗi bài; các giá trị hợp lệ: `LIKE`, `LOVE`, `HAHA`, `SAD`. Người dùng chỉ được sửa/xóa reaction của mình. |
-| BR-COM-08 | Ảnh tải lên chỉ nhận `jpg`, `png`, `webp`, tối đa 5 MB mỗi tệp. Ngoại lệ (đề xuất, chờ nhóm xác nhận ở họp Sprint 2): với `owner_type = HERITAGE` cho phép thêm `pdf`, tối đa 10 MB mỗi tệp, để lưu tài liệu lịch sử và kho lưu trữ số (FR-HER-01, FR-HER-05). Tổng kích thước mỗi request vẫn tối đa 10 MB. Sai định dạng trả 415 `FILE_002`, quá kích thước trả 413 `FILE_001`. Tên tệp lưu trên kho (`storage_key`) sinh bằng UUID, tên gốc đã làm sạch lưu ở `file_name` chỉ để hiển thị. Ảnh không được công khai bằng URL trực tiếp, phải phục vụ qua endpoint kiểm tra quyền. Ảnh có `owner_type` là `HERITAGE` hoặc `PERSON` tải lên bằng `POST /media`; quyền trên tài nguyên sở hữu do module `heritage`/`genealogy` quyết định. |
+| BR-COM-08 | Ảnh tải lên chỉ nhận `jpg`, `png`, `webp`, tối đa 5 MB mỗi tệp. Ngoại lệ (đã chốt 9/10/2026): với `owner_type = HERITAGE` cho phép thêm `pdf`, tối đa 10 MB mỗi tệp, để lưu tài liệu lịch sử và kho lưu trữ số (FR-HER-01, FR-HER-05). Tổng kích thước mỗi request vẫn tối đa 10 MB. Sai định dạng trả 415 `FILE_002`, quá kích thước trả 413 `FILE_001`. Tên tệp lưu trên kho (`storage_key`) sinh bằng UUID, tên gốc đã làm sạch lưu ở `file_name` chỉ để hiển thị. Ảnh không được công khai bằng URL trực tiếp, phải phục vụ qua endpoint kiểm tra quyền. Ảnh có `owner_type` là `HERITAGE` hoặc `PERSON` tải lên bằng `POST /media`; quyền trên tài nguyên sở hữu do module `heritage`/`genealogy` quyết định. |
 | BR-COM-09 | Chỉ `BRANCH_ADMIN` trong phạm vi quản lý hoặc `SYSTEM_ADMIN` được tạo/sửa thông báo; `announcement` có `is_pinned` để biểu diễn trạng thái ghim. |
 | BR-COM-10 | Xóa bài, bình luận, reaction, thông báo hoặc media dùng xóa mềm khi tài nguyên có `deleted_at`; hành động xóa nội dung cần audit log theo cơ chế chung SCRUM-57/NFR-11. |
 | BR-EVT-01 | Chỉ MEMBER đã xác minh, `BRANCH_ADMIN` hoặc `SYSTEM_ADMIN` được tạo sự kiện. Người tạo, `BRANCH_ADMIN` trong phạm vi và `SYSTEM_ADMIN` được sửa/xóa sự kiện theo quyền tương ứng. |
 | BR-EVT-02 | RSVP chỉ nhận `GOING`, `NOT_GOING`, `MAYBE`; mỗi người dùng có tối đa một RSVP đang hoạt động cho một sự kiện. Không được RSVP sau khi sự kiện bắt đầu: trả HTTP 409 `EVT_001`. Sự kiện đã bị xóa mềm hoặc không tồn tại: trả HTTP 404 `NOT_FOUND_001`. |
 | BR-EVT-03 | Danh sách người tham dự có thể lọc theo trạng thái RSVP. Thêm/gỡ người tham dự chỉ do người tạo sự kiện hoặc vai trò quản trị có quyền trong phạm vi thực hiện. Người được thêm phải thuộc cùng `family_id` với sự kiện; thêm trùng `(event_id, user_id)` trả HTTP 409 `CONFLICT_001`. Nếu người dùng đã được thêm, RSVP của chính họ cập nhật cùng bản ghi `event_participant`. Thành viên đã xác minh có quyền xem sự kiện được xem danh sách người tham dự (`srs.md` Phụ lục A); danh sách chỉ gồm họ tên và trạng thái RSVP, không kèm thông tin liên hệ. Chi tiết sự kiện vẫn trả `myRsvpStatus` và `rsvpCounts`. |
 | BR-EVT-04 | `events` dùng media chung do module `community` sở hữu; truy cập ảnh sự kiện phải kiểm tra quyền sự kiện/gia đình. Không tạo bảng ảnh riêng cho events. |
-| BR-EVT-05 | Nhắc nhở chỉ hướng đến người đã RSVP `GOING` hoặc `MAYBE`; thời điểm 24 giờ và 1 giờ trước `start_at` đang là đề xuất cần nhóm xác nhận. Mỗi mốc nhắc có loại riêng (`EVENT_REMINDER_24H`, `EVENT_REMINDER_1H`) nên ràng buộc duy nhất `(user_id, ref_id, type)` khi có `ref_id` vừa chống gửi trùng vừa cho phép đủ 2 lần nhắc; nếu nhóm đổi mốc nhắc thì đổi tên loại tương ứng. Kênh gửi vẫn là câu hỏi mở. |
+| BR-EVT-05 | Nhắc nhở chỉ hướng đến người đã RSVP `GOING` hoặc `MAYBE`; nhắc vào 24 giờ và 1 giờ trước `start_at` (đã chốt 9/10/2026). Mỗi mốc nhắc có loại riêng (`EVENT_REMINDER_24H`, `EVENT_REMINDER_1H`) nên ràng buộc duy nhất `(user_id, ref_id, type)` khi có `ref_id` vừa chống gửi trùng vừa cho phép đủ 2 lần nhắc; nếu sau này đổi mốc nhắc thì đổi tên loại tương ứng. Kênh gửi: thông báo trong ứng dụng (bản ghi `notification`, web và mobile cùng đọc qua `GET /notifications`); push notification trên mobile là phần mở rộng, không thuộc phạm vi cam kết. Mỗi người nhận có một bản ghi `notification` riêng (bảng có `user_id` và `is_read` theo từng người). |
 | BR-COM-11 | Khi bài đăng được tạo/sửa/xóa, module thông báo cho module `ai` qua interface `AiGateway` để cập nhật embedding; không gọi REST nội bộ. |
 | BR-EVT-06 | Khi sự kiện được tạo/sửa/xóa, module thông báo cho module `ai` qua interface `AiGateway` để cập nhật embedding; không gọi REST nội bộ. |
 
@@ -462,10 +462,10 @@ Link Figma và ảnh wireframe sẽ được bổ sung theo tiến độ thiết
 
 ## 9. Câu hỏi còn mở
 
-- [ ] Nhắc nhở sự kiện gửi qua thông báo trong ứng dụng chỉ, hay gửi thêm push notification trên mobile?
-- [ ] Xác nhận thời điểm nhắc nhở là 24 giờ và 1 giờ trước `start_at` hay lịch khác?
-- [ ] Bài đăng/thông báo/sự kiện có `branch_id` của một chi có được hiển thị cho các chi con không? Quy tắc quyền chi con cần thống nhất với SCRUM-18.
+- [x] Kênh nhắc nhở sự kiện: đã chốt 9/10/2026 là thông báo trong ứng dụng; push notification trên mobile là phần mở rộng nếu kịp (BR-EVT-05).
+- [x] Thời điểm nhắc nhở: đã chốt 9/10/2026 là 24 giờ và 1 giờ trước `start_at` (BR-EVT-05).
+- [x] Nội dung có `branch_id` của một chi: đã chốt 9/10/2026 là hiển thị cho chi đó và các chi con, khớp BR-GEN-14 của SCRUM-18 (BR-COM-03).
 - [x] Tên bảng tài khoản mà `notification.user_id` và `event_participant.user_id` tham chiếu: đã chốt `users` (`architecture.md` mục 7); hai cột này chỉ lưu UUID, không tạo FK chéo module (quyết định 9).
-- [ ] Xác nhận giới hạn độ dài nội dung bài đăng/bình luận theo SRS hoặc validation chung.
-- [ ] Khi thông báo/nhắc nhở được gửi, hệ thống có tạo một bản ghi `notification` riêng cho từng thành viên nhận không?
-- [ ] Cho phép tệp `pdf` (tối đa 10 MB) với `owner_type = HERITAGE` (BR-COM-08, `conventions.md` mục 7.3): đề xuất, chờ nhóm xác nhận ở họp Sprint 2.
+- [x] Giới hạn độ dài: đã chốt 9/10/2026, bài đăng 5000 ký tự, bình luận 1000 ký tự (BR-COM-06).
+- [x] Mỗi người nhận có một bản ghi `notification` riêng: đã chốt 9/10/2026 (BR-EVT-05).
+- [x] Cho phép tệp `pdf` (tối đa 10 MB) với `owner_type = HERITAGE` (BR-COM-08, `conventions.md` mục 7.3): đã chốt 9/10/2026.

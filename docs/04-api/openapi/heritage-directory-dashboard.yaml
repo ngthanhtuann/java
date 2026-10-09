@@ -239,7 +239,7 @@ paths:
         Vai trò: BRANCH_ADMIN, SYSTEM_ADMIN (MEMBER gọi trả 403 PERM_001). Tệp được tải lên trước bằng `POST /media` của community, sau đó gắn bằng `mediaId`.
         `media.family_id` phải trùng gia đình của người dùng, nếu không trả 403 PERM_001 (chống IDOR). `mediaId` không tồn tại trả 404.
         Tệp gắn vào tài liệu là media có `ownerType = HERITAGE`: ảnh `jpg`, `png`, `webp` (tối đa 5 MB) hoặc tệp `pdf` (tối đa 10 MB;
-        việc cho phép `pdf` là đề xuất, chờ nhóm xác nhận ở họp Sprint 2, xem conventions.md mục 7.3).
+        xem conventions.md mục 7.3).
         Sau khi tạo, module ai được thông báo qua interface để cập nhật embedding.
       operationId: createDocument
       x-roles: [BRANCH_ADMIN, SYSTEM_ADMIN]

@@ -1,7 +1,7 @@
 # SRS: Đặc tả yêu cầu phần mềm FamilyConnect
 
 > **Người viết:** TV1 (Tuấn Nguyễn Thanh) | **Reviewer:** TV4 (Huy Quốc) | **Task Jira:** SCRUM-14 | **Hạn nộp review:** Thứ Năm 8/10
-> **Phiên bản:** 0.2 (bản nháp đầy đủ, chờ nhóm họp chốt ở các mục đánh dấu "cần nhóm xác nhận") | **Ngày:** 6/10/2026
+> **Phiên bản:** 0.3 (các mục nhóm tự quyết đã chốt ngày 9/10/2026; còn chờ giảng viên xác nhận ở mục 3 và báo giảng viên mục 7.2) | **Ngày:** 9/10/2026
 > **Nguyên tắc viết:** mọi yêu cầu trong tài liệu này **bám theo đề tài giảng viên giao** (mục 3.2 a đến g). Phần nhóm tự bổ sung được ghi rõ là "bổ sung của nhóm".
 
 ---
@@ -224,7 +224,7 @@ Toàn bộ nội dung đề tài yêu cầu:
 - 11 sản phẩm bàn giao (đề tài mục f), đối chiếu ở **Phụ lục B**.
 - 5 gói công việc (đề tài mục g): phân tích và thiết kế; phát triển nền tảng; Mobile và tích hợp AI; trực quan hóa và phân tích; kiểm thử và triển khai.
 
-### 7.2 Mục thực hiện ở mức độ giảm (cần nhóm xác nhận, nên báo giảng viên)
+### 7.2 Mục thực hiện ở mức độ giảm (nhóm đã chốt 9/10/2026, cần báo giảng viên)
 Đề tài yêu cầu các mục này; nhóm làm ở mức sau vì giới hạn 8 tuần:
 | Mục | Mức độ thực hiện | Lý do |
 |---|---|---|
@@ -269,7 +269,7 @@ Cột trống được điền dần trong các sprint sau; mỗi hàng nối y�
 ---
 
 ## Phụ lục A. Ma trận phân quyền (role x chức năng)
-`Không` = không được; `Có` = được; ghi chú trong ngoặc là phạm vi dữ liệu. **Cần nhóm xác nhận.**
+`Không` = không được; `Có` = được; ghi chú trong ngoặc là phạm vi dữ liệu. **Đã chốt 9/10/2026** (leader quyết định, báo lại nhóm ở họp Sprint 2).
 
 | Chức năng | Khách (GUEST) | Thành viên chưa xác minh | Thành viên (MEMBER) | Trưởng chi (BRANCH_ADMIN) | Quản trị (SYSTEM_ADMIN) |
 |---|---|---|---|---|---|
