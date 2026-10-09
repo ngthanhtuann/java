@@ -2,9 +2,9 @@
 openapi: 3.0.3
 info:
   title: FamilyConnect - Community và Events
-  version: 0.1.0
-  description: API Community và Events. Mọi endpoint có xác thực Bearer JWT và kiểm tra family/branch scope theo
-    người dùng đăng nhập.
+  version: 0.2.0
+  description: API Community và Events. Mọi endpoint có xác thực Bearer JWT và kiểm
+    tra family/branch scope theo người dùng đăng nhập.
 servers:
 - url: /api/v1
 tags:
@@ -19,7 +19,8 @@ paths:
       - Community
       summary: Tạo bài đăng
       operationId: createPost
-      description: Kiểm tra Bearer JWT, trạng thái xác minh và phạm vi family/branch theo người dùng đăng nhập.
+      description: Kiểm tra Bearer JWT, trạng thái xác minh và phạm vi family/branch
+        theo người dùng đăng nhập.
       security:
       - bearerAuth: []
       responses:
@@ -40,12 +41,19 @@ paths:
                   content: Thông báo họp mặt gia đình cuối tuần
                   type: POST
                   createdBy: 550e8400-e29b-41d4-a716-446655440000
+                  commentCount: 0
+                  reactionCounts:
+                    LIKE: 0
+                    LOVE: 0
+                    HAHA: 0
+                    SAD: 0
+                  myReaction: null
         '400':
           $ref: '#/components/responses/ValidationError'
         '401':
           $ref: '#/components/responses/AuthError'
         '403':
-          $ref: '#/components/responses/UnverifiedError'
+          $ref: '#/components/responses/PermissionError'
         '404':
           $ref: '#/components/responses/NotFoundError'
       requestBody:
@@ -62,7 +70,8 @@ paths:
       - Community
       summary: Danh sách bài đăng
       operationId: listPosts
-      description: Kiểm tra Bearer JWT, trạng thái xác minh và phạm vi family/branch theo người dùng đăng nhập.
+      description: Kiểm tra Bearer JWT, trạng thái xác minh và phạm vi family/branch
+        theo người dùng đăng nhập.
       security:
       - bearerAuth: []
       responses:
@@ -83,6 +92,13 @@ paths:
                   content: Thông báo họp mặt gia đình cuối tuần
                   type: POST
                   createdBy: 550e8400-e29b-41d4-a716-446655440000
+                  commentCount: 0
+                  reactionCounts:
+                    LIKE: 0
+                    LOVE: 0
+                    HAHA: 0
+                    SAD: 0
+                  myReaction: null
                 meta:
                   page: 0
                   size: 20
@@ -107,7 +123,8 @@ paths:
       - Community
       summary: Chi tiết bài đăng
       operationId: getPost
-      description: Kiểm tra Bearer JWT, trạng thái xác minh và phạm vi family/branch theo người dùng đăng nhập.
+      description: Kiểm tra Bearer JWT, trạng thái xác minh và phạm vi family/branch
+        theo người dùng đăng nhập.
       security:
       - bearerAuth: []
       responses:
@@ -128,6 +145,13 @@ paths:
                   content: Thông báo họp mặt gia đình cuối tuần
                   type: POST
                   createdBy: 550e8400-e29b-41d4-a716-446655440000
+                  commentCount: 0
+                  reactionCounts:
+                    LIKE: 0
+                    LOVE: 0
+                    HAHA: 0
+                    SAD: 0
+                  myReaction: null
         '400':
           $ref: '#/components/responses/ValidationError'
         '401':
@@ -149,7 +173,8 @@ paths:
       - Community
       summary: Sửa một phần bài đăng
       operationId: updatePost
-      description: Kiểm tra Bearer JWT, trạng thái xác minh và phạm vi family/branch theo người dùng đăng nhập.
+      description: Kiểm tra Bearer JWT, trạng thái xác minh và phạm vi family/branch
+        theo người dùng đăng nhập.
       security:
       - bearerAuth: []
       responses:
@@ -170,6 +195,13 @@ paths:
                   content: Thông báo họp mặt gia đình cuối tuần
                   type: POST
                   createdBy: 550e8400-e29b-41d4-a716-446655440000
+                  commentCount: 0
+                  reactionCounts:
+                    LIKE: 0
+                    LOVE: 0
+                    HAHA: 0
+                    SAD: 0
+                  myReaction: null
         '400':
           $ref: '#/components/responses/ValidationError'
         '401':
@@ -199,7 +231,8 @@ paths:
       - Community
       summary: Xóa mềm bài đăng
       operationId: deletePost
-      description: Kiểm tra Bearer JWT, trạng thái xác minh và phạm vi family/branch theo người dùng đăng nhập.
+      description: Kiểm tra Bearer JWT, trạng thái xác minh và phạm vi family/branch
+        theo người dùng đăng nhập.
       security:
       - bearerAuth: []
       responses:
@@ -234,7 +267,8 @@ paths:
       - Community
       summary: Danh sách bình luận của bài đăng
       operationId: listPostComments
-      description: Kiểm tra Bearer JWT, trạng thái xác minh và phạm vi family/branch theo người dùng đăng nhập.
+      description: Kiểm tra Bearer JWT, trạng thái xác minh và phạm vi family/branch
+        theo người dùng đăng nhập.
       security:
       - bearerAuth: []
       responses:
@@ -281,7 +315,8 @@ paths:
       - Community
       summary: Thêm bình luận
       operationId: createComment
-      description: Kiểm tra Bearer JWT, trạng thái xác minh và phạm vi family/branch theo người dùng đăng nhập.
+      description: Kiểm tra Bearer JWT, trạng thái xác minh và phạm vi family/branch
+        theo người dùng đăng nhập.
       security:
       - bearerAuth: []
       responses:
@@ -330,7 +365,8 @@ paths:
       - Community
       summary: Sửa bình luận của mình
       operationId: updateComment
-      description: Kiểm tra Bearer JWT, trạng thái xác minh và phạm vi family/branch theo người dùng đăng nhập.
+      description: Kiểm tra Bearer JWT, trạng thái xác minh và phạm vi family/branch
+        theo người dùng đăng nhập.
       security:
       - bearerAuth: []
       responses:
@@ -378,7 +414,8 @@ paths:
       - Community
       summary: Xóa bình luận
       operationId: deleteComment
-      description: Kiểm tra Bearer JWT, trạng thái xác minh và phạm vi family/branch theo người dùng đăng nhập.
+      description: Kiểm tra Bearer JWT, trạng thái xác minh và phạm vi family/branch
+        theo người dùng đăng nhập.
       security:
       - bearerAuth: []
       responses:
@@ -413,7 +450,8 @@ paths:
       - Community
       summary: Thêm hoặc thay reaction
       operationId: upsertReaction
-      description: Kiểm tra Bearer JWT, trạng thái xác minh và phạm vi family/branch theo người dùng đăng nhập.
+      description: Kiểm tra Bearer JWT, trạng thái xác minh và phạm vi family/branch
+        theo người dùng đăng nhập.
       security:
       - bearerAuth: []
       responses:
@@ -461,7 +499,8 @@ paths:
       - Community
       summary: Xóa reaction của mình
       operationId: deleteReaction
-      description: Kiểm tra Bearer JWT, trạng thái xác minh và phạm vi family/branch theo người dùng đăng nhập.
+      description: Kiểm tra Bearer JWT, trạng thái xác minh và phạm vi family/branch
+        theo người dùng đăng nhập.
       security:
       - bearerAuth: []
       responses:
@@ -491,16 +530,70 @@ paths:
           format: uuid
         description: UUID của id
   /posts/{id}/media:
+    get:
+      tags:
+      - Community
+      summary: Danh sách ảnh của bài đăng
+      operationId: listPostMedia
+      description: Kiểm tra Bearer JWT, trạng thái xác minh và phạm vi family/branch
+        theo người dùng đăng nhập.
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MediaListResponse'
+              example:
+                success: true
+                data:
+                - id: 550e8400-e29b-41d4-a716-446655440000
+                  createdAt: '2026-10-09T10:00:00+07:00'
+                  updatedAt: '2026-10-09T10:00:00+07:00'
+                  ownerType: POST
+                  ownerId: 550e8400-e29b-41d4-a716-446655440000
+                  familyId: 550e8400-e29b-41d4-a716-446655440000
+                  fileName: anh-ho-mat.jpg
+                  contentType: image/jpeg
+                  fileSize: 245760
+                  contentUrl: /api/v1/media/550e8400-e29b-41d4-a716-446655440000/content
+                  caption: null
+                meta:
+                  page: 0
+                  size: 20
+                  total: 1
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/AuthError'
+        '403':
+          $ref: '#/components/responses/PermissionError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+      parameters:
+      - $ref: '#/components/parameters/Page'
+      - $ref: '#/components/parameters/Size'
+      - $ref: '#/components/parameters/Sort'
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+        description: UUID của id
     post:
       tags:
       - Community
       summary: Tải ảnh lên bài đăng
       operationId: uploadPostMedia
-      description: Kiểm tra Bearer JWT, trạng thái xác minh và phạm vi family/branch theo người dùng đăng nhập.
+      description: Kiểm tra Bearer JWT, trạng thái xác minh và phạm vi family/branch
+        theo người dùng đăng nhập.
       security:
       - bearerAuth: []
       responses:
-        '200':
+        '201':
           description: Thành công
           content:
             application/json:
@@ -512,9 +605,14 @@ paths:
                   id: 550e8400-e29b-41d4-a716-446655440000
                   createdAt: '2026-10-09T10:00:00+07:00'
                   updatedAt: '2026-10-09T10:00:00+07:00'
+                  ownerType: POST
                   ownerId: 550e8400-e29b-41d4-a716-446655440000
                   familyId: 550e8400-e29b-41d4-a716-446655440000
-                  fileName: 6f4d6e80-28ef-4f70-8ac4-4a04cb3902f2.jpg
+                  fileName: anh-ho-mat.jpg
+                  contentType: image/jpeg
+                  fileSize: 245760
+                  contentUrl: /api/v1/media/550e8400-e29b-41d4-a716-446655440000/content
+                  caption: null
         '400':
           $ref: '#/components/responses/ValidationError'
         '401':
@@ -548,13 +646,64 @@ paths:
           type: string
           format: uuid
         description: UUID của id
+  /media:
+    post:
+      tags:
+      - Community
+      summary: Tải ảnh cho tài nguyên heritage hoặc person
+      operationId: uploadMedia
+      description: Dùng cho ownerType HERITAGE hoặc PERSON; quyền trên tài nguyên
+        sở hữu do module heritage/genealogy quyết định. Ảnh bài đăng và sự kiện dùng
+        endpoint riêng.
+      security:
+      - bearerAuth: []
+      responses:
+        '201':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MediaResponse'
+              example:
+                success: true
+                data:
+                  id: 550e8400-e29b-41d4-a716-446655440000
+                  createdAt: '2026-10-09T10:00:00+07:00'
+                  updatedAt: '2026-10-09T10:00:00+07:00'
+                  ownerType: PERSON
+                  ownerId: 550e8400-e29b-41d4-a716-446655440000
+                  familyId: 550e8400-e29b-41d4-a716-446655440000
+                  fileName: anh-dai-dien.jpg
+                  contentType: image/jpeg
+                  fileSize: 120480
+                  contentUrl: /api/v1/media/550e8400-e29b-41d4-a716-446655440000/content
+                  caption: null
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/AuthError'
+        '403':
+          $ref: '#/components/responses/PermissionError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '413':
+          $ref: '#/components/responses/FileTooLarge'
+        '415':
+          $ref: '#/components/responses/UnsupportedFile'
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UploadMediaRequest'
   /media/{id}/content:
     get:
       tags:
       - Community
       summary: Lấy nội dung ảnh sau kiểm tra quyền
       operationId: getMediaContent
-      description: Kiểm tra Bearer JWT, trạng thái xác minh và phạm vi family/branch theo người dùng đăng nhập.
+      description: Kiểm tra Bearer JWT, trạng thái xác minh và phạm vi family/branch
+        theo người dùng đăng nhập.
       security:
       - bearerAuth: []
       responses:
@@ -595,7 +744,8 @@ paths:
       - Community
       summary: Xóa media
       operationId: deleteMedia
-      description: Kiểm tra Bearer JWT, trạng thái xác minh và phạm vi family/branch theo người dùng đăng nhập.
+      description: Kiểm tra Bearer JWT, trạng thái xác minh và phạm vi family/branch
+        theo người dùng đăng nhập.
       security:
       - bearerAuth: []
       responses:
@@ -630,7 +780,8 @@ paths:
       - Community
       summary: Tạo thông báo
       operationId: createAnnouncement
-      description: Kiểm tra Bearer JWT, trạng thái xác minh và phạm vi family/branch theo người dùng đăng nhập.
+      description: Kiểm tra Bearer JWT, trạng thái xác minh và phạm vi family/branch
+        theo người dùng đăng nhập.
       security:
       - bearerAuth: []
       responses:
@@ -675,7 +826,8 @@ paths:
       - Community
       summary: Danh sách thông báo
       operationId: listAnnouncements
-      description: Kiểm tra Bearer JWT, trạng thái xác minh và phạm vi family/branch theo người dùng đăng nhập.
+      description: Kiểm tra Bearer JWT, trạng thái xác minh và phạm vi family/branch
+        theo người dùng đăng nhập.
       security:
       - bearerAuth: []
       responses:
@@ -720,7 +872,8 @@ paths:
       - Community
       summary: Chi tiết thông báo
       operationId: getAnnouncement
-      description: Kiểm tra Bearer JWT, trạng thái xác minh và phạm vi family/branch theo người dùng đăng nhập.
+      description: Kiểm tra Bearer JWT, trạng thái xác minh và phạm vi family/branch
+        theo người dùng đăng nhập.
       security:
       - bearerAuth: []
       responses:
@@ -763,7 +916,8 @@ paths:
       - Community
       summary: Sửa thông báo
       operationId: updateAnnouncement
-      description: Kiểm tra Bearer JWT, trạng thái xác minh và phạm vi family/branch theo người dùng đăng nhập.
+      description: Kiểm tra Bearer JWT, trạng thái xác minh và phạm vi family/branch
+        theo người dùng đăng nhập.
       security:
       - bearerAuth: []
       responses:
@@ -814,7 +968,8 @@ paths:
       - Community
       summary: Xóa thông báo
       operationId: deleteAnnouncement
-      description: Kiểm tra Bearer JWT, trạng thái xác minh và phạm vi family/branch theo người dùng đăng nhập.
+      description: Kiểm tra Bearer JWT, trạng thái xác minh và phạm vi family/branch
+        theo người dùng đăng nhập.
       security:
       - bearerAuth: []
       responses:
@@ -849,7 +1004,8 @@ paths:
       - Community
       summary: Danh sách thông báo của người đăng nhập
       operationId: listNotifications
-      description: Kiểm tra Bearer JWT, trạng thái xác minh và phạm vi family/branch theo người dùng đăng nhập.
+      description: Kiểm tra Bearer JWT, trạng thái xác minh và phạm vi family/branch
+        theo người dùng đăng nhập.
       security:
       - bearerAuth: []
       responses:
@@ -865,11 +1021,12 @@ paths:
                 - id: 550e8400-e29b-41d4-a716-446655440000
                   createdAt: '2026-10-09T10:00:00+07:00'
                   updatedAt: '2026-10-09T10:00:00+07:00'
-                  type: EVENT_REMINDER
+                  type: EVENT_REMINDER_24H
                   refType: EVENT
                   refId: 550e8400-e29b-41d4-a716-446655440000
                   content: Sự kiện Họp mặt gia đình sắp diễn ra.
                   isRead: false
+                  title: 'Nhắc sự kiện: Họp mặt gia đình'
                 meta:
                   page: 0
                   size: 20
@@ -884,13 +1041,15 @@ paths:
       - $ref: '#/components/parameters/Page'
       - $ref: '#/components/parameters/Size'
       - $ref: '#/components/parameters/Sort'
-  /notifications/{id}/read:
+      - $ref: '#/components/parameters/ReadFilter'
+  /notifications/{id}:
     patch:
       tags:
       - Community
       summary: Đánh dấu thông báo đã đọc
       operationId: markNotificationRead
-      description: Kiểm tra Bearer JWT, trạng thái xác minh và phạm vi family/branch theo người dùng đăng nhập.
+      description: Kiểm tra Bearer JWT, trạng thái xác minh và phạm vi family/branch
+        theo người dùng đăng nhập.
       security:
       - bearerAuth: []
       responses:
@@ -906,17 +1065,20 @@ paths:
                   id: 550e8400-e29b-41d4-a716-446655440000
                   createdAt: '2026-10-09T10:00:00+07:00'
                   updatedAt: '2026-10-09T10:00:00+07:00'
-                  type: EVENT_REMINDER
+                  type: EVENT_REMINDER_24H
                   refType: EVENT
                   refId: 550e8400-e29b-41d4-a716-446655440000
                   content: Sự kiện Họp mặt gia đình sắp diễn ra.
-                  isRead: false
+                  isRead: true
+                  title: 'Nhắc sự kiện: Họp mặt gia đình'
         '400':
           $ref: '#/components/responses/ValidationError'
         '401':
           $ref: '#/components/responses/AuthError'
         '403':
           $ref: '#/components/responses/PermissionError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
       requestBody:
         required: true
         content:
@@ -938,7 +1100,8 @@ paths:
       - Events
       summary: Tạo sự kiện
       operationId: createEvent
-      description: Kiểm tra Bearer JWT, trạng thái xác minh và phạm vi family/branch theo người dùng đăng nhập.
+      description: Kiểm tra Bearer JWT, trạng thái xác minh và phạm vi family/branch
+        theo người dùng đăng nhập.
       security:
       - bearerAuth: []
       responses:
@@ -962,6 +1125,11 @@ paths:
                   endAt: '2026-10-10T12:00:00+07:00'
                   location: Nhà văn hóa
                   createdBy: 550e8400-e29b-41d4-a716-446655440000
+                  myRsvpStatus: null
+                  rsvpCounts:
+                    going: 0
+                    notGoing: 0
+                    maybe: 0
         '400':
           $ref: '#/components/responses/ValidationError'
         '401':
@@ -984,7 +1152,8 @@ paths:
       - Events
       summary: Danh sách sự kiện
       operationId: listEvents
-      description: Kiểm tra Bearer JWT, trạng thái xác minh và phạm vi family/branch theo người dùng đăng nhập.
+      description: Kiểm tra Bearer JWT, trạng thái xác minh và phạm vi family/branch
+        theo người dùng đăng nhập.
       security:
       - bearerAuth: []
       responses:
@@ -1008,6 +1177,11 @@ paths:
                   endAt: '2026-10-10T12:00:00+07:00'
                   location: Nhà văn hóa
                   createdBy: 550e8400-e29b-41d4-a716-446655440000
+                  myRsvpStatus: GOING
+                  rsvpCounts:
+                    going: 1
+                    notGoing: 0
+                    maybe: 0
                 meta:
                   page: 0
                   size: 20
@@ -1033,7 +1207,8 @@ paths:
       - Events
       summary: Chi tiết sự kiện
       operationId: getEvent
-      description: Kiểm tra Bearer JWT, trạng thái xác minh và phạm vi family/branch theo người dùng đăng nhập.
+      description: Kiểm tra Bearer JWT, trạng thái xác minh và phạm vi family/branch
+        theo người dùng đăng nhập.
       security:
       - bearerAuth: []
       responses:
@@ -1057,6 +1232,11 @@ paths:
                   endAt: '2026-10-10T12:00:00+07:00'
                   location: Nhà văn hóa
                   createdBy: 550e8400-e29b-41d4-a716-446655440000
+                  myRsvpStatus: GOING
+                  rsvpCounts:
+                    going: 1
+                    notGoing: 0
+                    maybe: 0
         '400':
           $ref: '#/components/responses/ValidationError'
         '401':
@@ -1078,7 +1258,8 @@ paths:
       - Events
       summary: Sửa một phần sự kiện
       operationId: updateEvent
-      description: Kiểm tra Bearer JWT, trạng thái xác minh và phạm vi family/branch theo người dùng đăng nhập.
+      description: Kiểm tra Bearer JWT, trạng thái xác minh và phạm vi family/branch
+        theo người dùng đăng nhập.
       security:
       - bearerAuth: []
       responses:
@@ -1102,6 +1283,11 @@ paths:
                   endAt: '2026-10-10T12:00:00+07:00'
                   location: Nhà văn hóa
                   createdBy: 550e8400-e29b-41d4-a716-446655440000
+                  myRsvpStatus: GOING
+                  rsvpCounts:
+                    going: 1
+                    notGoing: 0
+                    maybe: 0
         '400':
           $ref: '#/components/responses/ValidationError'
         '401':
@@ -1131,7 +1317,8 @@ paths:
       - Events
       summary: Xóa mềm sự kiện
       operationId: deleteEvent
-      description: Kiểm tra Bearer JWT, trạng thái xác minh và phạm vi family/branch theo người dùng đăng nhập.
+      description: Kiểm tra Bearer JWT, trạng thái xác minh và phạm vi family/branch
+        theo người dùng đăng nhập.
       security:
       - bearerAuth: []
       responses:
@@ -1166,7 +1353,8 @@ paths:
       - Events
       summary: Tạo hoặc cập nhật RSVP
       operationId: upsertEventRsvp
-      description: Kiểm tra Bearer JWT, trạng thái xác minh và phạm vi family/branch theo người dùng đăng nhập.
+      description: Kiểm tra Bearer JWT, trạng thái xác minh và phạm vi family/branch
+        theo người dùng đăng nhập.
       security:
       - bearerAuth: []
       responses:
@@ -1184,6 +1372,7 @@ paths:
                   updatedAt: '2026-10-09T10:00:00+07:00'
                   eventId: 550e8400-e29b-41d4-a716-446655440000
                   userId: 550e8400-e29b-41d4-a716-446655440000
+                  rsvpStatus: GOING
                   displayName: Nguyễn Văn A
         '400':
           $ref: '#/components/responses/ValidationError'
@@ -1202,7 +1391,7 @@ paths:
             schema:
               $ref: '#/components/schemas/RsvpRequest'
             example:
-              status: GOING
+              rsvpStatus: GOING
       parameters:
       - name: id
         in: path
@@ -1217,7 +1406,8 @@ paths:
       - Events
       summary: Danh sách người tham dự
       operationId: listEventParticipants
-      description: Kiểm tra Bearer JWT, trạng thái xác minh và phạm vi family/branch theo người dùng đăng nhập.
+      description: Kiểm tra Bearer JWT, trạng thái xác minh và phạm vi family/branch
+        theo người dùng đăng nhập.
       security:
       - bearerAuth: []
       responses:
@@ -1235,6 +1425,7 @@ paths:
                   updatedAt: '2026-10-09T10:00:00+07:00'
                   eventId: 550e8400-e29b-41d4-a716-446655440000
                   userId: 550e8400-e29b-41d4-a716-446655440000
+                  rsvpStatus: GOING
                   displayName: Nguyễn Văn A
                 meta:
                   page: 0
@@ -1265,7 +1456,8 @@ paths:
       - Events
       summary: Thêm người tham dự
       operationId: addEventParticipant
-      description: Kiểm tra Bearer JWT, trạng thái xác minh và phạm vi family/branch theo người dùng đăng nhập.
+      description: Kiểm tra Bearer JWT, trạng thái xác minh và phạm vi family/branch
+        theo người dùng đăng nhập.
       security:
       - bearerAuth: []
       responses:
@@ -1283,6 +1475,7 @@ paths:
                   updatedAt: '2026-10-09T10:00:00+07:00'
                   eventId: 550e8400-e29b-41d4-a716-446655440000
                   userId: 550e8400-e29b-41d4-a716-446655440000
+                  rsvpStatus: GOING
                   displayName: Nguyễn Văn A
         '400':
           $ref: '#/components/responses/ValidationError'
@@ -1292,6 +1485,8 @@ paths:
           $ref: '#/components/responses/PermissionError'
         '404':
           $ref: '#/components/responses/NotFoundError'
+        '409':
+          $ref: '#/components/responses/DuplicateError'
       requestBody:
         required: true
         content:
@@ -1315,7 +1510,8 @@ paths:
       - Events
       summary: Danh sách ảnh sự kiện
       operationId: listEventMedia
-      description: Kiểm tra Bearer JWT, trạng thái xác minh và phạm vi family/branch theo người dùng đăng nhập.
+      description: Kiểm tra Bearer JWT, trạng thái xác minh và phạm vi family/branch
+        theo người dùng đăng nhập.
       security:
       - bearerAuth: []
       responses:
@@ -1331,9 +1527,14 @@ paths:
                 - id: 550e8400-e29b-41d4-a716-446655440000
                   createdAt: '2026-10-09T10:00:00+07:00'
                   updatedAt: '2026-10-09T10:00:00+07:00'
+                  ownerType: EVENT
                   ownerId: 550e8400-e29b-41d4-a716-446655440000
                   familyId: 550e8400-e29b-41d4-a716-446655440000
-                  fileName: 6f4d6e80-28ef-4f70-8ac4-4a04cb3902f2.jpg
+                  fileName: anh-ho-mat.jpg
+                  contentType: image/jpeg
+                  fileSize: 245760
+                  contentUrl: /api/v1/media/550e8400-e29b-41d4-a716-446655440000/content
+                  caption: null
                 meta:
                   page: 0
                   size: 20
@@ -1362,11 +1563,12 @@ paths:
       - Events
       summary: Tải ảnh lên thư viện sự kiện
       operationId: uploadEventMedia
-      description: Kiểm tra Bearer JWT, trạng thái xác minh và phạm vi family/branch theo người dùng đăng nhập.
+      description: Kiểm tra Bearer JWT, trạng thái xác minh và phạm vi family/branch
+        theo người dùng đăng nhập.
       security:
       - bearerAuth: []
       responses:
-        '200':
+        '201':
           description: Thành công
           content:
             application/json:
@@ -1378,9 +1580,14 @@ paths:
                   id: 550e8400-e29b-41d4-a716-446655440000
                   createdAt: '2026-10-09T10:00:00+07:00'
                   updatedAt: '2026-10-09T10:00:00+07:00'
+                  ownerType: EVENT
                   ownerId: 550e8400-e29b-41d4-a716-446655440000
                   familyId: 550e8400-e29b-41d4-a716-446655440000
-                  fileName: 6f4d6e80-28ef-4f70-8ac4-4a04cb3902f2.jpg
+                  fileName: anh-ho-mat.jpg
+                  contentType: image/jpeg
+                  fileSize: 245760
+                  contentUrl: /api/v1/media/550e8400-e29b-41d4-a716-446655440000/content
+                  caption: null
         '400':
           $ref: '#/components/responses/ValidationError'
         '401':
@@ -1420,7 +1627,8 @@ paths:
       - Events
       summary: Gỡ người tham dự
       operationId: removeEventParticipant
-      description: Kiểm tra Bearer JWT, trạng thái xác minh và phạm vi family/branch theo người dùng đăng nhập.
+      description: Kiểm tra Bearer JWT, trạng thái xác minh và phạm vi family/branch
+        theo người dùng đăng nhập.
       security:
       - bearerAuth: []
       responses:
@@ -1521,6 +1729,11 @@ components:
         - GOING
         - NOT_GOING
         - MAYBE
+    ReadFilter:
+      name: isRead
+      in: query
+      schema:
+        type: boolean
   schemas:
     Post:
       type: object
@@ -1549,6 +1762,45 @@ components:
           - NEWS
           example: POST
         createdBy: *id002
+        commentCount:
+          type: integer
+          minimum: 0
+          example: 0
+        reactionCounts:
+          type: object
+          properties:
+            LIKE:
+              type: integer
+              minimum: 0
+              example: 0
+            LOVE:
+              type: integer
+              minimum: 0
+              example: 0
+            HAHA:
+              type: integer
+              minimum: 0
+              example: 0
+            SAD:
+              type: integer
+              minimum: 0
+              example: 0
+          additionalProperties: false
+          required:
+          - LIKE
+          - LOVE
+          - HAHA
+          - SAD
+        myReaction:
+          type: string
+          nullable: true
+          enum:
+          - LIKE
+          - LOVE
+          - HAHA
+          - SAD
+          - null
+          description: Reaction hiện tại của người đăng nhập; null nếu chưa thả
       additionalProperties: false
       required:
       - id
@@ -1557,6 +1809,9 @@ components:
       - type
       - createdAt
       - updatedAt
+      - commentCount
+      - reactionCounts
+      - myReaction
     Comment:
       type: object
       properties:
@@ -1612,11 +1867,13 @@ components:
           - POST
           - EVENT
           - HERITAGE
+          - PERSON
         ownerId: *id002
         familyId: *id002
         fileName:
           type: string
-          example: 6f4d6e80-28ef-4f70-8ac4-4a04cb3902f2.jpg
+          example: anh-ho-mat.jpg
+          description: Tên tệp gốc đã làm sạch, chỉ để hiển thị
         contentType:
           type: string
           enum:
@@ -1627,6 +1884,17 @@ components:
           type: integer
           format: int64
           maximum: 5242880
+        contentUrl:
+          type: string
+          readOnly: true
+          example: /api/v1/media/550e8400-e29b-41d4-a716-446655440000/content
+          description: Đường dẫn lấy nội dung ảnh (cần Bearer JWT); không phải URL
+            công khai
+        caption:
+          type: string
+          nullable: true
+          maxLength: 255
+          example: Họp mặt gia đình 2026
       additionalProperties: false
       required:
       - id
@@ -1638,6 +1906,7 @@ components:
       - fileSize
       - createdAt
       - updatedAt
+      - contentUrl
     Announcement:
       type: object
       properties:
@@ -1697,6 +1966,35 @@ components:
           nullable: true
           example: Nhà văn hóa
         createdBy: *id002
+        myRsvpStatus:
+          type: string
+          nullable: true
+          enum:
+          - GOING
+          - NOT_GOING
+          - MAYBE
+          - null
+          description: RSVP hiện tại của người đăng nhập; null nếu chưa RSVP
+        rsvpCounts:
+          type: object
+          properties:
+            going:
+              type: integer
+              minimum: 0
+              example: 0
+            notGoing:
+              type: integer
+              minimum: 0
+              example: 0
+            maybe:
+              type: integer
+              minimum: 0
+              example: 0
+          additionalProperties: false
+          required:
+          - going
+          - notGoing
+          - maybe
       additionalProperties: false
       required:
       - id
@@ -1705,6 +2003,8 @@ components:
       - startAt
       - createdAt
       - updatedAt
+      - myRsvpStatus
+      - rsvpCounts
     Participant:
       type: object
       properties:
@@ -1738,7 +2038,14 @@ components:
         updatedAt: *id001
         type:
           type: string
-          example: EVENT_REMINDER
+          enum:
+          - EVENT_REMINDER_24H
+          - EVENT_REMINDER_1H
+          - ANNOUNCEMENT
+          example: EVENT_REMINDER_24H
+        title:
+          type: string
+          example: 'Nhắc sự kiện: Họp mặt gia đình'
         refType:
           type: string
           nullable: true
@@ -1757,6 +2064,7 @@ components:
       required:
       - id
       - type
+      - title
       - content
       - isRead
       - createdAt
@@ -1902,7 +2210,7 @@ components:
     RsvpRequest:
       type: object
       properties:
-        status:
+        rsvpStatus:
           type: string
           enum:
           - GOING
@@ -1911,7 +2219,7 @@ components:
           example: GOING
       additionalProperties: false
       required:
-      - status
+      - rsvpStatus
     ParticipantRequest:
       type: object
       properties:
@@ -1923,6 +2231,8 @@ components:
           - NOT_GOING
           - MAYBE
           example: GOING
+          default: MAYBE
+          description: Mặc định MAYBE khi người tạo sự kiện thêm hộ
       additionalProperties: false
       required:
       - userId
@@ -2386,6 +2696,28 @@ components:
       - success
       - data
       - meta
+    UploadMediaRequest:
+      type: object
+      properties:
+        file:
+          type: string
+          format: binary
+        ownerType:
+          type: string
+          enum:
+          - HERITAGE
+          - PERSON
+        ownerId:
+          type: string
+          format: uuid
+        caption:
+          type: string
+          maxLength: 255
+      additionalProperties: false
+      required:
+      - file
+      - ownerType
+      - ownerId
   responses:
     AuthError:
       description: Token hết hạn hoặc không hợp lệ
@@ -2405,12 +2737,6 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/ErrorResponse'
-          example:
-            success: false
-            error:
-              code: PERM_001
-              message: Không đủ quyền
-              details: []
           examples:
             PERM_001:
               summary: Không đủ quyền
@@ -2428,18 +2754,6 @@ components:
                   code: PERM_002
                   message: Thành viên chưa được xác minh
                   details: []
-    UnverifiedError:
-      description: Thành viên chưa được xác minh
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/ErrorResponse'
-          example:
-            success: false
-            error:
-              code: PERM_002
-              message: Thành viên chưa được xác minh
-              details: []
     ValidationError:
       description: Dữ liệu không hợp lệ
       content:
@@ -2465,7 +2779,7 @@ components:
               message: Không tìm thấy tài nguyên
               details: []
     ConflictError:
-      description: Sự kiện đã bắt đầu hoặc đã bị xóa; không thể RSVP
+      description: Sự kiện đã bắt đầu; không thể RSVP
       content:
         application/json:
           schema:
@@ -2474,7 +2788,7 @@ components:
             success: false
             error:
               code: EVT_001
-              message: Sự kiện đã bắt đầu hoặc đã bị xóa; không thể RSVP
+              message: Sự kiện đã bắt đầu; không thể RSVP
               details: []
     FileTooLarge:
       description: Tệp vượt kích thước cho phép 5 MB
@@ -2499,4 +2813,16 @@ components:
             error:
               code: FILE_002
               message: Chỉ hỗ trợ ảnh jpg, png, webp
+              details: []
+    DuplicateError:
+      description: Dữ liệu đã tồn tại
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            error:
+              code: CONFLICT_001
+              message: Người dùng đã có trong danh sách người tham dự
               details: []
