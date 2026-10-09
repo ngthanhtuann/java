@@ -209,7 +209,7 @@ sequenceDiagram
                 LL-->>GW: timeout / API error
                 GW->>AU: ghi LLM_API_ERROR
                 GW-->>AC: fallback: trả về thông báo<br/>lỗi dịch vụ LLM
-                AC-->>FE: 503 ErrorResponse
+                AC-->>FE: 503 ErrorResponse (AI_001)
             else LLM thành công
                 LL-->>GW: câu trả lời tự nhiên
                 GW->>DB: lưu ai_chat_message
