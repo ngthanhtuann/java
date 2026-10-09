@@ -1,5 +1,5 @@
 > **Người viết:** TV4 (Huy Quốc) | **Reviewer:** Nguyễn Thanh Tuấn | **Task Jira:** SCRUM-22
-> **Trạng thái:** Chờ review
+> **Trạng thái:** Chờ review | **Phiên bản:** 0.2 (đã sửa theo review của TV1)
 
 # TÀI LIỆU ĐẶC TẢ MODULE: HERITAGE, DIRECTORY, DASHBOARD
 **Nhánh Git:** docs/SCRUM-22-heritage-directory-dashboard
@@ -28,8 +28,9 @@ Theo tài liệu SRS mục 3, các yêu cầu chức năng thuộc phạm vi 3 m
 
 ### 2.2 Danh sách Actor & Mối quan hệ
 *   **Thành viên (MEMBER):** Người dùng đã đăng nhập và được Trưởng chi xác minh vào gia đình (sở hữu `family_id` hợp lệ).
-*   **Quản trị viên chi họ (BRANCH_ADMIN):** Kế thừa toàn bộ quyền hạn của MEMBER, bổ sung quyền phê duyệt, quản lý và trích xuất dữ liệu tổng hợp trong phạm vi chi họ của mình (hoặc toàn gia đình nếu `branch_id` rỗng).
-*   **Quản trị viên hệ thống (SYSTEM_ADMIN):** Kế thừa toàn bộ quyền hạn của MEMBER, có quyền quản lý và trích xuất dữ liệu trên toàn bộ gia đình.
+*   **Quản trị viên chi họ (BRANCH_ADMIN):** Kế thừa toàn bộ quyền hạn của MEMBER, bổ sung quyền quản lý tài liệu lịch sử và người tiêu biểu, xem dashboard và xuất dữ liệu tổng hợp trong phạm vi chi họ của mình (hoặc toàn gia đình nếu `branch_id` rỗng).
+*   **Quản trị viên hệ thống (SYSTEM_ADMIN):** Kế thừa toàn bộ quyền hạn của BRANCH_ADMIN (và MEMBER), có quyền quản lý và trích xuất dữ liệu trên toàn bộ gia đình.
+*   **Phân quyền theo bảng "Ai được làm gì" của `srs.md`:** MEMBER **không** xem dashboard và không xuất báo cáo; MEMBER chỉ **xem** tài liệu lịch sử, được thêm câu chuyện và ảnh; chỉ BRANCH_ADMIN và SYSTEM_ADMIN thêm/sửa/xóa tài liệu lịch sử và quản lý người tiêu biểu.
 
 ### 2.3 Đặc tả chi tiết 8 Use Case
 
@@ -56,12 +57,12 @@ Theo tài liệu SRS mục 3, các yêu cầu chức năng thuộc phạm vi 3 m
 | Tên Use Case | UC-HER-01: Quản lý tài liệu lịch sử |
 | :--- | :--- |
 | **Mã UC / FR** | UC-HER-01 / FR-HER-01, FR-HER-05 |
-| **Actor** | MEMBER, BRANCH_ADMIN, SYSTEM_ADMIN |
+| **Actor** | BRANCH_ADMIN, SYSTEM_ADMIN (thêm, sửa, xóa); MEMBER (chỉ xem danh sách và chi tiết) |
 | **Tiền điều kiện** | File tải lên qua module Community, có `media_id` hợp lệ, thuộc cùng `family_id` của người dùng. |
-| **Luồng chính** | 1. Thêm mới: Nhập Tiêu đề, Mô tả, Danh mục và `media_id`. Hệ thống kiểm tra `media_id` tồn tại và `media.family_id` trùng `family_id` của người dùng, sau đó ghi bản ghi vào `heritage_document`.<br>2. Sửa/Xóa: Hệ thống kiểm tra quyền (người đăng hoặc Admin) và thực hiện cập nhật/xóa mềm.<br>3. Báo module AI cập nhật embedding qua interface. |
-| **Luồng lỗi** | - Dùng `media_id` gia đình khác hoặc cố sửa/xóa khi không đủ quyền: 403 PERM_001.<br>- Chưa xác minh: 403 PERM_002.<br>- Dữ liệu thiếu: 400 VALID_001.<br>- Không tìm thấy tài liệu: 404 NOT_FOUND_001. |
+| **Luồng chính** | 1. Thêm mới: Nhập Tiêu đề, Mô tả, Danh mục và `media_id`. Hệ thống kiểm tra `media_id` tồn tại và `media.family_id` trùng `family_id` của người dùng, sau đó ghi bản ghi vào `heritage_document`.<br>2. Sửa/Xóa: Hệ thống kiểm tra vai trò BRANCH_ADMIN hoặc SYSTEM_ADMIN trong gia đình của người dùng, rồi cập nhật/xóa mềm.<br>3. Báo module AI cập nhật embedding qua interface. |
+| **Luồng lỗi** | - MEMBER thêm/sửa/xóa, hoặc dùng `media_id` của gia đình khác: 403 PERM_001.<br>- Chưa xác minh: 403 PERM_002.<br>- Dữ liệu thiếu: 400 VALID_001.<br>- Không tìm thấy tài liệu: 404 NOT_FOUND_001. |
 | **Hậu điều kiện** | Tài liệu xuất hiện/được cập nhật/bị xóa trong kho lưu trữ số. |
-| **Quy tắc** | **BR-HER-01:** Phân loại theo category. Chỉ người đăng tải hoặc Admin trong phạm vi quyền hạn mới được phép sửa/xóa. |
+| **Quy tắc** | **BR-HER-01:** Phân loại theo category. Chỉ BRANCH_ADMIN và SYSTEM_ADMIN được thêm/sửa/xóa tài liệu (theo `srs.md`); MEMBER chỉ xem. Tài liệu thuộc cả gia đình, không gắn chi. |
 
 | Tên Use Case | UC-HER-02: Quản lý câu chuyện gia đình |
 | :--- | :--- |
@@ -78,10 +79,10 @@ Theo tài liệu SRS mục 3, các yêu cầu chức năng thuộc phạm vi 3 m
 | **Mã UC / FR** | UC-HER-03 / FR-HER-04 |
 | **Actor** | MEMBER, BRANCH_ADMIN, SYSTEM_ADMIN |
 | **Tiền điều kiện** | Đã đăng nhập và xác minh. |
-| **Luồng chính** | 1. Gửi yêu cầu GET đọc danh sách ảnh từ module community qua interface với điều kiện `owner_type = 'HERITAGE'` và `family_id`.<br>2. Trả kết quả ảnh phân trang. |
+| **Luồng chính** | 1. Gửi yêu cầu GET đọc danh sách ảnh từ module community qua interface với điều kiện `owner_type = 'HERITAGE'` và `family_id`.<br>2. Trả kết quả ảnh phân trang.<br>*(Tải ảnh lên dùng `POST /api/v1/media` của community với `ownerType = HERITAGE`; MEMBER và BRANCH_ADMIN được tải theo `srs.md`.)* |
 | **Luồng lỗi** | - Chưa xác minh: 403 PERM_002.<br>*(Ghi chú: Việc upload tệp bị quá dung lượng hoặc sai định dạng do module community xử lý)* |
 | **Hậu điều kiện** | Người dùng xem được danh sách hình ảnh di sản. |
-| **Quy tắc** | **BR-HER-03:** Không có bảng riêng, đọc trực tiếp từ `media`. |
+| **Quy tắc** | **BR-HER-03:** Không có bảng riêng, đọc trực tiếp từ `media` (`owner_type = HERITAGE`, cùng `family_id`). Ảnh nào đã được `heritage_document` tham chiếu (bản scan tài liệu) thì **không** hiện trong thư viện ảnh, chỉ hiện ở UC-HER-01. |
 
 | Tên Use Case | UC-HER-04: Quản lý người tiêu biểu |
 | :--- | :--- |
@@ -96,19 +97,19 @@ Theo tài liệu SRS mục 3, các yêu cầu chức năng thuộc phạm vi 3 m
 | Tên Use Case | UC-DSH-01: Xem Dashboard tổng quan |
 | :--- | :--- |
 | **Mã UC / FR** | UC-DSH-01 / FR-DSH-01 đến FR-DSH-04 |
-| **Actor** | MEMBER, BRANCH_ADMIN, SYSTEM_ADMIN |
+| **Actor** | BRANCH_ADMIN, SYSTEM_ADMIN |
 | **Tiền điều kiện** | Đã xác minh `family_id`. BRANCH_ADMIN xem trong phạm vi chi họ của mình (hoặc toàn gia đình nếu `branch_id` rỗng). |
-| **Luồng chính** | 1. Người dùng xem Dashboard.<br>2. Gọi interface đến genealogy, community, events để tổng hợp số liệu.<br>3. Trả về JSON thống kê. |
-| **Luồng lỗi** | - Chưa đăng nhập/token lỗi: 401 AUTH_002.<br>- Chưa xác minh: 403 PERM_002. |
+| **Luồng chính** | 1. Người dùng xem Dashboard.<br>2. Gọi interface đến genealogy, directory, community, events để tổng hợp số liệu.<br>3. Trả về JSON thống kê. |
+| **Luồng lỗi** | - Chưa đăng nhập/token lỗi: 401 AUTH_002.<br>- Chưa xác minh: 403 PERM_002.<br>- MEMBER gọi, hoặc `branchId` ngoài phạm vi / khác gia đình: 403 PERM_001. |
 | **Hậu điều kiện** | Biểu đồ Dashboard hiển thị trực quan các chỉ số hiện tại. |
-| **Quy tắc** | **BR-DSH-01:** Chỉ đọc qua interface Java. Thống kê nghề nghiệp, nơi ở phải loại trừ trẻ dưới 16 tuổi. |
+| **Quy tắc** | **BR-DSH-01:** Chỉ BRANCH_ADMIN và SYSTEM_ADMIN xem dashboard (theo `srs.md`); MEMBER không xem. Chỉ đọc qua interface Java. Thống kê nghề nghiệp, nơi ở phải loại trừ trẻ dưới 16 tuổi. |
 
 | Tên Use Case | UC-DSH-02: Xuất báo cáo CSV |
 | :--- | :--- |
 | **Mã UC / FR** | UC-DSH-02 / FR-DSH-05 |
 | **Actor** | BRANCH_ADMIN, SYSTEM_ADMIN |
 | **Tiền điều kiện** | Đã xác minh `family_id` và có quyền quản trị. BRANCH_ADMIN xuất trong phạm vi chi họ. |
-| **Luồng chính** | 1. Quản trị viên nhấn xuất CSV.<br>2. Lấy toàn bộ dữ liệu danh bạ qua interface genealogy.<br>3. Ẩn thông tin liên hệ và địa chỉ chi tiết; với trẻ dưới 16 tuổi chỉ điền `id`, `fullName`, `relationship`, `birthYear`, các cột còn lại để trống.<br>4. Chèn dấu `'` trước các ô chứa `=`, `+`, `-`, `@` để chống Injection.<br>5. Trả file UTF-8 kèm BOM.<br>6. Ghi Audit Log hành động xuất dữ liệu. |
+| **Luồng chính** | 1. Quản trị viên nhấn xuất CSV.<br>2. Lấy dữ liệu danh bạ qua interface genealogy (họ tên, quan hệ, giới tính, thế hệ) và hồ sơ nghề nghiệp qua interface directory.<br>3. Ẩn thông tin liên hệ và địa chỉ chi tiết; với trẻ dưới 16 tuổi chỉ điền `id`, `fullName`, `relationship`, `birthYear`, các cột còn lại để trống.<br>4. Chèn dấu `'` trước các ô chứa `=`, `+`, `-`, `@` để chống Injection.<br>5. Trả file UTF-8 kèm BOM.<br>6. Ghi Audit Log hành động xuất dữ liệu. |
 | **Luồng lỗi** | - Sai token: 401 AUTH_002.<br>- Không đủ quyền (MEMBER gọi): 403 PERM_001.<br>- Chưa xác minh: 403 PERM_002. |
 | **Hậu điều kiện** | File CSV được tải về thiết bị. Hệ thống lưu vết thao tác (SCRUM-57). |
 | **Quy tắc** | **BR-DSH-02:** Danh sách cột (camelCase): `id`, `fullName`, `birthYear`, `gender`, `relationship`, `generation`, `jobTitle`, `workLocation`. Với trẻ dưới 16 tuổi chỉ điền `id`, `fullName`, `relationship`, `birthYear` (theo mục "Trẻ em và người đã mất" của privacy.md). Audit log bắt buộc. |
@@ -116,27 +117,37 @@ Theo tài liệu SRS mục 3, các yêu cầu chức năng thuộc phạm vi 3 m
 ## 3. DANH SÁCH API, LIÊN KẾT MODULE & CÂU HỎI MỞ
 
 ### 3.1 Danh sách API
+Tiền tố `/api/v1`. Mọi API trả lỗi theo `conventions.md`; danh sách có `page`, `size`, `sort`.
+
 | Method | URL | Use Case | Vai trò | Mã lỗi chính |
 | :--- | :--- | :--- | :--- | :--- |
-| GET | `/directory/members` | UC-DIR-01 | MEMBER, BRANCH_ADMIN, SYSTEM_ADMIN | AUTH_002, PERM_002 |
-| GET | `/directory/members/{personId}/profession-profile` | Xem HS | MEMBER, BRANCH_ADMIN, SYSTEM_ADMIN | AUTH_002, PERM_002, NOT_FOUND_001 |
-| PUT | `/directory/members/{personId}/profession-profile` | UC-DIR-02 | MEMBER, BRANCH_ADMIN, SYSTEM_ADMIN | AUTH_002, PERM_001, PERM_002, VALID_001 |
-| GET | `/directory/members/{personId}/education-profile` | Xem HS | MEMBER, BRANCH_ADMIN, SYSTEM_ADMIN | AUTH_002, PERM_002, NOT_FOUND_001 |
-| PUT | `/directory/members/{personId}/education-profile` | UC-DIR-02 | MEMBER, BRANCH_ADMIN, SYSTEM_ADMIN | AUTH_002, PERM_001, PERM_002, VALID_001 |
-| GET/POST | `/heritage/documents` | UC-HER-01 | MEMBER, BRANCH_ADMIN, SYSTEM_ADMIN | AUTH_002, PERM_001, PERM_002, VALID_001 |
-| GET/PATCH/DELETE | `/heritage/documents/{id}` | UC-HER-01 | MEMBER, BRANCH_ADMIN, SYSTEM_ADMIN | AUTH_002, PERM_001, PERM_002, VALID_001, NOT_FOUND_001 |
-| GET/POST | `/heritage/stories` | UC-HER-02 | MEMBER, BRANCH_ADMIN, SYSTEM_ADMIN | AUTH_002, PERM_001, PERM_002, VALID_001 |
-| GET/PATCH/DELETE | `/heritage/stories/{id}` | UC-HER-02 | MEMBER, BRANCH_ADMIN, SYSTEM_ADMIN | AUTH_002, PERM_001, PERM_002, VALID_001, NOT_FOUND_001 |
-| GET | `/heritage/photos` | UC-HER-03 | MEMBER, BRANCH_ADMIN, SYSTEM_ADMIN | AUTH_002, PERM_002 |
-| GET/POST | `/heritage/outstanding-members` | UC-HER-04 | BRANCH_ADMIN, SYSTEM_ADMIN | AUTH_002, PERM_001, PERM_002, VALID_001, HER_001 |
-| PATCH/DELETE | `/heritage/outstanding-members/{id}` | UC-HER-04 | BRANCH_ADMIN, SYSTEM_ADMIN | AUTH_002, PERM_001, PERM_002, VALID_001, NOT_FOUND_001 |
-| GET | `/dashboard/statistics` | UC-DSH-01 | MEMBER, BRANCH_ADMIN, SYSTEM_ADMIN | AUTH_002, PERM_001, PERM_002 |
-| GET | `/dashboard/reports/members` | UC-DSH-02 | BRANCH_ADMIN, SYSTEM_ADMIN | AUTH_002, PERM_001, PERM_002 |
+| GET | `/directory/members` | UC-DIR-01 | MEMBER, BRANCH_ADMIN, SYSTEM_ADMIN | VALID_001, AUTH_002, PERM_002 |
+| GET | `/directory/members/{personId}/profession-profile` | UC-DIR-02 | MEMBER, BRANCH_ADMIN, SYSTEM_ADMIN | AUTH_002, PERM_001, PERM_002, NOT_FOUND_001 |
+| PUT | `/directory/members/{personId}/profession-profile` | UC-DIR-02 | MEMBER, BRANCH_ADMIN, SYSTEM_ADMIN | VALID_001, AUTH_002, PERM_001, PERM_002, NOT_FOUND_001 |
+| GET | `/directory/members/{personId}/education-profile` | UC-DIR-02 | MEMBER, BRANCH_ADMIN, SYSTEM_ADMIN | AUTH_002, PERM_001, PERM_002, NOT_FOUND_001 |
+| PUT | `/directory/members/{personId}/education-profile` | UC-DIR-02 | MEMBER, BRANCH_ADMIN, SYSTEM_ADMIN | VALID_001, AUTH_002, PERM_001, PERM_002, NOT_FOUND_001 |
+| GET | `/heritage/documents` | UC-HER-01 | MEMBER, BRANCH_ADMIN, SYSTEM_ADMIN | VALID_001, AUTH_002, PERM_002 |
+| GET | `/heritage/documents/{id}` | UC-HER-01 | MEMBER, BRANCH_ADMIN, SYSTEM_ADMIN | AUTH_002, PERM_002, NOT_FOUND_001 |
+| POST | `/heritage/documents` | UC-HER-01 | BRANCH_ADMIN, SYSTEM_ADMIN | VALID_001, AUTH_002, PERM_001, PERM_002, NOT_FOUND_001 |
+| PATCH, DELETE | `/heritage/documents/{id}` | UC-HER-01 | BRANCH_ADMIN, SYSTEM_ADMIN | VALID_001, AUTH_002, PERM_001, PERM_002, NOT_FOUND_001 |
+| GET | `/heritage/stories` | UC-HER-02 | MEMBER, BRANCH_ADMIN, SYSTEM_ADMIN | VALID_001, AUTH_002, PERM_002 |
+| GET | `/heritage/stories/{id}` | UC-HER-02 | MEMBER, BRANCH_ADMIN, SYSTEM_ADMIN | AUTH_002, PERM_002, NOT_FOUND_001 |
+| POST | `/heritage/stories` | UC-HER-02 | MEMBER, BRANCH_ADMIN, SYSTEM_ADMIN | VALID_001, AUTH_002, PERM_001, PERM_002, NOT_FOUND_001 |
+| PATCH, DELETE | `/heritage/stories/{id}` | UC-HER-02 | MEMBER (của mình), BRANCH_ADMIN, SYSTEM_ADMIN | VALID_001, AUTH_002, PERM_001, PERM_002, NOT_FOUND_001 |
+| GET | `/heritage/photos` | UC-HER-03 | MEMBER, BRANCH_ADMIN, SYSTEM_ADMIN | VALID_001, AUTH_002, PERM_002 |
+| GET | `/heritage/outstanding-members` | UC-HER-04 | MEMBER, BRANCH_ADMIN, SYSTEM_ADMIN | VALID_001, AUTH_002, PERM_002 |
+| POST | `/heritage/outstanding-members` | UC-HER-04 | BRANCH_ADMIN, SYSTEM_ADMIN | VALID_001, AUTH_002, PERM_001, PERM_002, NOT_FOUND_001, HER_001 |
+| PATCH, DELETE | `/heritage/outstanding-members/{id}` | UC-HER-04 | BRANCH_ADMIN, SYSTEM_ADMIN | VALID_001, AUTH_002, PERM_001, PERM_002, NOT_FOUND_001 |
+| GET | `/dashboard/statistics` | UC-DSH-01 | BRANCH_ADMIN, SYSTEM_ADMIN | VALID_001, AUTH_002, PERM_001, PERM_002 |
+| GET | `/dashboard/reports/members` | UC-DSH-02 | BRANCH_ADMIN, SYSTEM_ADMIN | VALID_001, AUTH_002, PERM_001, PERM_002 |
+
+API xóa trả `200` với `{ "success": true, "data": null }`, không dùng `204` (`conventions.md`, mục 2.2).
 
 ### 3.2 Liên kết module khác
 *   **Genealogy:** Cung cấp nhân khẩu học qua `GenealogyInterface.getDemographics()`.
 *   **Community:** Cung cấp hình ảnh qua `CommunityInterface.getHeritageMedia()`. Báo module này khi tải lên ảnh/tệp.
 *   **Events:** Cung cấp sự kiện qua `EventInterface.getUpcomingEvents()`.
+*   **Directory:** Cung cấp thống kê nghề nghiệp, nơi ở và hồ sơ nghề nghiệp cho dashboard qua `DirectoryInterface`.
 *   **AI:** Báo cập nhật embedding qua `AiGateway`.
 
 ### 3.3 Bảng mã lỗi riêng (Module Errors)
@@ -144,10 +155,13 @@ Theo tài liệu SRS mục 3, các yêu cầu chức năng thuộc phạm vi 3 m
 | :--- | :--- | :--- |
 | `HER_001` | 409 Conflict | Thành viên đã tồn tại trong danh sách tiêu biểu. |
 
-### 3.4 Câu hỏi còn mở (Open Questions)
-1. **Định nghĩa Đời 1 (Thống kê thế hệ):** SQL 5.2 đệ quy trên bảng `parent_child`, coi Đời 1 là những người không phải `child_id` của ai. Câu này chưa loại được người cưới vào (họ cũng không có cha mẹ trong cây nên bị tính là Đời 1). Cần module `genealogy` xác nhận cách loại trừ (ví dụ join bảng hôn nhân) và tên bảng/cột `parent_child`, `person.birth_date` để query chính xác.
-2. **Xóa tệp vật lý:** Khi xóa mềm `heritage_document`, có gọi sang MinIO xóa cứng file không?
-3. **Quyền nhánh tộc:** BRANCH_ADMIN có quyền can thiệp vào tài liệu chung của toàn dòng họ không?
+### 3.4 Quyết định đã chốt và câu hỏi còn mở
+**Đã chốt**
+1. **Cách tính thế hệ:** theo `genealogy.md` mục 6.8 (đời 1 là người không có cha mẹ trong gia đình; người vào bằng hôn nhân lấy đời của vợ/chồng; lấy giá trị lớn nhất). Dashboard và danh bạ lấy qua `GenealogyInterface.getDemographics()`, không tự viết truy vấn đệ quy riêng.
+2. **Quyền của BRANCH_ADMIN với tài liệu chung:** có, theo `srs.md` ("Có (tất cả)"). Tài liệu lịch sử thuộc cả gia đình, không gắn chi.
+
+**Còn mở (cần nhóm xác nhận)**
+1. **Xóa tệp vật lý:** đề xuất khi xóa mềm `heritage_document` thì **giữ** tệp trong kho để khôi phục; việc dọn tệp mồ côi quyết định cùng spike lưu trữ ảnh (SCRUM-31).
 
 ## 4. THIẾT KẾ CƠ SỞ DỮ LIỆU
 *Quy ước chung: Khóa chính UUID. Các bảng có `id`, `created_at`, `updated_at`, `deleted_at`, `created_by` (FK -> `users(id)`), `updated_by` (FK -> `users(id)`). FK dùng `ON DELETE RESTRICT`.*
@@ -194,6 +208,7 @@ CREATE TABLE family_story (
     CONSTRAINT fk_family_story_updater FOREIGN KEY (updated_by) REFERENCES users(id) ON DELETE RESTRICT
 );
 CREATE INDEX idx_family_story_family ON family_story (family_id, created_at DESC) WHERE deleted_at IS NULL;
+CREATE INDEX idx_family_story_related ON family_story (related_person_id) WHERE deleted_at IS NULL AND related_person_id IS NOT NULL;
 
 -- 3. Bảng người tiêu biểu
 -- Mục đích: Vinh danh những cá nhân xuất sắc trong dòng họ, quy định thứ tự hiển thị trên danh sách.
@@ -258,54 +273,35 @@ CREATE TABLE education_profile (
 );
 CREATE UNIQUE INDEX uq_edu_person ON education_profile (person_id) WHERE deleted_at IS NULL;
 ```
-## 5. CHỈ SỐ DASHBOARD & CÂU TRUY VẤN SQL CHUẨN HÓA
+## 5. CHỈ SỐ DASHBOARD & CÂU TRUY VẤN SQL THAM KHẢO
+> Các câu SQL dưới đây mô tả logic. Khi triển khai, mỗi module chỉ truy vấn bảng của mình; dữ liệu của module khác lấy qua interface Java (không join chéo module). BRANCH_ADMIN chỉ xem trong phạm vi chi (thêm điều kiện `branch_id` khi có `branchId`).
+
 | Chỉ số | FR | Nguồn dữ liệu (Interface) | Vai trò xem được |
 | :--- | :--- | :--- | :--- |
-| Tổng thành viên | FR-DSH-01 | `GenealogyInterface.getTotalMembers()` | MEMBER, BRANCH_ADMIN, SYSTEM_ADMIN |
-| Theo thế hệ | FR-DSH-04 | `GenealogyInterface.getDemographics()` | MEMBER, BRANCH_ADMIN, SYSTEM_ADMIN |
-| Theo giới tính | FR-DSH-04 | `GenealogyInterface.getDemographics()` | MEMBER, BRANCH_ADMIN, SYSTEM_ADMIN |
-| Nghề nghiệp | FR-DSH-04 | `DirectoryInterface.getJobStats()` | MEMBER, BRANCH_ADMIN, SYSTEM_ADMIN |
-| Nơi ở | FR-DSH-04 | `DirectoryInterface.getLocationStats()` | MEMBER, BRANCH_ADMIN, SYSTEM_ADMIN |
-| Bài đăng theo tuần | FR-DSH-02 | `CommunityInterface.getWeeklyPosts()` | MEMBER, BRANCH_ADMIN, SYSTEM_ADMIN |
-| Sự kiện sắp tới | FR-DSH-03 | `EventInterface.getUpcomingEvents()` | MEMBER, BRANCH_ADMIN, SYSTEM_ADMIN |
-### 5.1 Tổng thành viên (bao gồm cả người đã mất):
+| Tổng thành viên | FR-DSH-01 | `GenealogyInterface.getTotalMembers()` | BRANCH_ADMIN, SYSTEM_ADMIN |
+| Theo thế hệ | FR-DSH-04 | `GenealogyInterface.getDemographics()` | BRANCH_ADMIN, SYSTEM_ADMIN |
+| Theo giới tính | FR-DSH-04 | `GenealogyInterface.getDemographics()` | BRANCH_ADMIN, SYSTEM_ADMIN |
+| Nghề nghiệp | FR-DSH-04 | `DirectoryInterface.getJobStats()` | BRANCH_ADMIN, SYSTEM_ADMIN |
+| Nơi ở | FR-DSH-04 | `DirectoryInterface.getLocationStats()` | BRANCH_ADMIN, SYSTEM_ADMIN |
+| Bài đăng theo tuần | FR-DSH-02 | `CommunityInterface.getWeeklyPosts()` | BRANCH_ADMIN, SYSTEM_ADMIN |
+| Sự kiện sắp tới | FR-DSH-03 | `EventInterface.getUpcomingEvents()` | BRANCH_ADMIN, SYSTEM_ADMIN |
+### 5.1 Tổng thành viên (bao gồm cả người đã mất)
 ```sql
 SELECT COUNT(*) AS total_members
 FROM person
 WHERE family_id = :familyId AND deleted_at IS NULL;
 ```
-5.2 Thống kê theo thế hệ:
-```sql
-WITH RECURSIVE generation_tree AS (
-    SELECT p.id, 1 AS generation
-    FROM person p
-    WHERE p.family_id = :familyId 
-      AND p.deleted_at IS NULL
-      AND NOT EXISTS (SELECT 1 FROM parent_child pc0 WHERE pc0.child_id = p.id AND pc0.deleted_at IS NULL)
-    UNION ALL
-    SELECT pc.child_id, gt.generation + 1
-    FROM parent_child pc
-    INNER JOIN generation_tree gt ON pc.parent_id = gt.id
-    WHERE pc.deleted_at IS NULL
-),
-person_generation AS (
-    SELECT id, MIN(generation) AS generation  -- người có cả cha lẫn mẹ trong cây chỉ tính một lần
-    FROM generation_tree
-    GROUP BY id
-)
-SELECT generation, COUNT(*) AS count
-FROM person_generation
-GROUP BY generation
-ORDER BY generation ASC;
-```
-5.3 Thống kê giới tính:
+### 5.2 Thống kê theo thế hệ
+Lấy từ `GenealogyInterface.getDemographics()`; cách tính thế hệ xem `genealogy.md` mục 6.8 (không lặp lại truy vấn ở đây để hai tài liệu không lệch nhau).
+
+### 5.3 Thống kê giới tính
 ```sql
 SELECT gender, COUNT(*) AS count
 FROM person
 WHERE family_id = :familyId AND deleted_at IS NULL
 GROUP BY gender;
 ```
-5.4 Thống kê nghề nghiệp (Loại trừ trẻ dưới 16 tuổi bằng birth_date):
+### 5.4 Thống kê nghề nghiệp (loại trừ trẻ dưới 16 tuổi và người đã mất)
 ```sql
 SELECT pf.job_title, COUNT(*) AS count
 FROM profession_profile pf
@@ -313,22 +309,26 @@ JOIN person p ON p.id = pf.person_id
 WHERE pf.family_id = :familyId 
   AND pf.deleted_at IS NULL 
   AND p.deleted_at IS NULL
-  AND EXTRACT(YEAR FROM AGE(p.birth_date)) >= 16
+  AND p.is_deceased = FALSE
+  AND p.birth_date <= CURRENT_DATE - INTERVAL '16 years'
+  AND (:branchId IS NULL OR p.branch_id = :branchId)
 GROUP BY pf.job_title
 ORDER BY count DESC;
 ```
-5.5 Thống kê nơi ở (Loại trừ trẻ dưới 16 tuổi bằng birth_date):
+### 5.5 Thống kê nơi ở (loại trừ trẻ dưới 16 tuổi và người đã mất)
 ```sql
 SELECT p.current_province AS location, COUNT(*) AS count
 FROM person p
 WHERE p.family_id = :familyId 
   AND p.deleted_at IS NULL 
   AND p.current_province IS NOT NULL
-  AND EXTRACT(YEAR FROM AGE(p.birth_date)) >= 16
+  AND p.is_deceased = FALSE
+  AND p.birth_date <= CURRENT_DATE - INTERVAL '16 years'
+  AND (:branchId IS NULL OR p.branch_id = :branchId)
 GROUP BY p.current_province
 ORDER BY count DESC;
 ```
-5.6 Bài đăng 8 tuần gần nhất:
+### 5.6 Bài đăng 8 tuần gần nhất (xếp tuần cũ đến mới)
 ```sql
 WITH date_series AS (
     SELECT generate_series(
@@ -342,9 +342,9 @@ FROM date_series ds
 LEFT JOIN post p ON DATE_TRUNC('week', p.created_at AT TIME ZONE 'Asia/Ho_Chi_Minh') = ds.week_start
     AND p.family_id = :familyId AND p.deleted_at IS NULL
 GROUP BY ds.week_start
-ORDER BY ds.week_start DESC;
+ORDER BY ds.week_start ASC;
 ```
-5.7 5 sự kiện sắp tới:
+### 5.7 5 sự kiện sắp tới
 ```sql
 SELECT id, title, start_at
 FROM event
