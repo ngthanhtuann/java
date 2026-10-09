@@ -28,8 +28,8 @@ Theo tài liệu SRS mục 3, các yêu cầu chức năng thuộc phạm vi 3 m
 
 ### 2.2 Danh sách Actor & Mối quan hệ
 *   **Thành viên (MEMBER):** Người dùng đã đăng nhập và được Trưởng chi xác minh vào gia đình (sở hữu `family_id` hợp lệ).
-*   **Quản trị viên chi họ (BRANCH_ADMIN):** Kế thừa toàn bộ quyền hạn của MEMBER, bổ sung quyền quản lý tài liệu lịch sử và người tiêu biểu, xem dashboard và xuất dữ liệu tổng hợp trong phạm vi chi họ của mình (hoặc toàn gia đình nếu `branch_id` rỗng).
-*   **Quản trị viên hệ thống (SYSTEM_ADMIN):** Kế thừa toàn bộ quyền hạn của BRANCH_ADMIN (và MEMBER), có quyền quản lý và trích xuất dữ liệu trên toàn bộ gia đình.
+*   **Trưởng chi (BRANCH_ADMIN):** Kế thừa toàn bộ quyền hạn của MEMBER, bổ sung quyền quản lý tài liệu lịch sử và người tiêu biểu, xem dashboard và xuất dữ liệu tổng hợp trong phạm vi chi họ của mình (hoặc toàn gia đình nếu `branch_id` rỗng).
+*   **Quản trị hệ thống (SYSTEM_ADMIN):** Kế thừa toàn bộ quyền hạn của BRANCH_ADMIN (và MEMBER), có quyền quản lý và trích xuất dữ liệu trên toàn bộ gia đình.
 *   **Phân quyền theo bảng "Ai được làm gì" của `srs.md`:** MEMBER **không** xem dashboard và không xuất báo cáo; MEMBER chỉ **xem** tài liệu lịch sử, được thêm câu chuyện và ảnh; chỉ BRANCH_ADMIN và SYSTEM_ADMIN thêm/sửa/xóa tài liệu lịch sử và quản lý người tiêu biểu.
 
 ### 2.3 Đặc tả chi tiết 8 Use Case
