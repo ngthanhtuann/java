@@ -21,7 +21,7 @@ Tham chiếu:
 * Tài nguyên có nhiều từ sử dụng `kebab-case`.
 * Không dùng động từ trong URL, ngoại trừ các endpoint đã thống nhất: `/auth/login`, `/auth/refresh`, `/ai/chat`.
 * Tài nguyên lồng nhau tối đa 2 cấp.
-* Tham số đường dẫn dùng `camelCase`, ví dụ `{familyId}`, `{postId}`.
+* Tham số đường dẫn dùng `camelCase`, ví dụ `{familyId}`, `{postId}`. Tài nguyên chính của endpoint có thể dùng `{id}`; tài nguyên cha trong đường dẫn lồng nhau dùng tên đầy đủ, ví dụ `/families/{familyId}/branches`.
 * ID và khóa ngoại trong API sử dụng UUID dạng chuỗi.
 
 Ví dụ:
@@ -188,6 +188,8 @@ Tiền tố module đã thống nhất:
 
 Mã lỗi riêng dùng cho các trường hợp vi phạm quy tắc nghiệp vụ và trả về HTTP `409 Conflict`, trừ khi tài liệu đã thống nhất quy định cụ thể khác.
 
+`AI_001` là mã dùng chung (HTTP `503`); mã nghiệp vụ riêng của module AI dùng từ `AI_002` trở đi.
+
 Danh sách mã lỗi phải được ghi trong tài liệu use case và file OpenAPI tương ứng. Không tự ý tạo mã trùng hoặc thay đổi mã đã thống nhất.
 
 ## 4. Phân trang và sắp xếp
@@ -205,7 +207,7 @@ Quy tắc:
 * `sort`: tên trường theo `camelCase` và chiều sắp xếp `asc` hoặc `desc`.
 * `sort` dùng tên thuộc tính API/entity theo `camelCase`, không dùng tên cột DB dạng `snake_case`.
 * `meta.total` là tổng số bản ghi phù hợp với truy vấn.
-* Nếu `size` vượt quá `100`, trả về HTTP `400` với mã `VALID_001`.
+* Nếu `size` vượt quá `100`, hoặc `sort` theo trường không hợp lệ, trả về HTTP `400` với mã `VALID_001`.
 * Response của API danh sách phải có `data` là mảng và có `meta`.
 
 Ví dụ hợp lệ:
@@ -222,6 +224,7 @@ Ví dụ hợp lệ:
 * ID và khóa ngoại trong API sử dụng UUID dạng chuỗi.
 * Trường thời gian sử dụng `createdAt`, `updatedAt`, tương ứng với cột DB `created_at`, `updated_at`.
 * Mọi response của thực thể phải có `createdAt` và `updatedAt`.
+* API không trả `deletedAt`; dữ liệu đã xóa mềm không xuất hiện trong response.
 * Trường không có giá trị trả về `null`, không tự ý bỏ trường khỏi response.
 * Enum sử dụng `UPPER_SNAKE_CASE`.
 * Encoding sử dụng UTF-8.
@@ -232,14 +235,14 @@ Ví dụ:
 {
   "id": "550e8400-e29b-41d4-a716-446655440000",
   "createdAt": "2026-10-09T10:00:00+07:00",
-  "updatedAt": "2026-10-09T10:30:00+07:00",
-  "deletedAt": null
+  "updatedAt": "2026-10-09T10:30:00+07:00"
 }
 ```
 
 ### 5.2. Ngày và giờ
 
 * Thời điểm có giờ sử dụng ISO-8601 kèm múi giờ.
+* Cơ sở dữ liệu lưu thời điểm bằng `TIMESTAMPTZ` (UTC) và ngày thuần bằng `DATE`; API trả ISO-8601 kèm múi giờ hoặc `YYYY-MM-DD`.
 * Ngày thuần, ví dụ ngày sinh, sử dụng định dạng `YYYY-MM-DD`.
 
 Ví dụ:
@@ -318,13 +321,15 @@ OpenAPI là nguồn chuẩn để định nghĩa DTO của web và mobile. DTO �
 Checklist bắt buộc cho mỗi module:
 
 * Mỗi endpoint có request mẫu và response mẫu thành công, response lỗi, mã HTTP và quyền truy cập.
-* Dùng đúng schema chung `SuccessResponse`, `ErrorResponse`.
+* Response thành công theo envelope `success`/`data`/`meta`, đặt tên schema `<Entity>Response`, `<Entity>ListResponse`; response lỗi dùng schema chung `ErrorResponse`.
 * API danh sách dùng tham số `page`, `size`, `sort`; `data` là mảng và có `meta`.
 * API trả về một đối tượng không có `meta`.
 * Khai báo `bearerAuth` cho endpoint cần đăng nhập; endpoint công khai khai báo `security: []`.
 * Khai báo các response lỗi phù hợp: `400`, `401`, `403`, `404`, `409`, `413`, `415`, `429`, `500`, `503` khi endpoint có liên quan.
 * Phân biệt `PERM_001` và `PERM_002`.
 * Mỗi `operationId` phải duy nhất trên toàn hệ thống.
+* Ví dụ response phải khớp schema (đủ trường `required`); không dùng `example` cùng lúc với `examples` trong một media type.
+* API tạo mới, kể cả tải tệp lên, trả HTTP `201`.
 * ID và khóa ngoại là UUID dạng chuỗi.
 * Enum sử dụng `UPPER_SNAKE_CASE`.
 * Response của thực thể có `createdAt`, `updatedAt`.
