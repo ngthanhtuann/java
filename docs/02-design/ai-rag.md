@@ -5,14 +5,14 @@
 > Cách làm: tạo nhánh `docs/<mã SCRUM>-<tên-ngắn>` từ `develop`, điền vào file này, mở Pull Request vào `develop`. Xem `docs/README.md`.
 
 ## 1. Kết quả spike (SCRUM-24)
-> Embedding tiếng Việt, độ trễ, chi phí ước tính, chọn nhà cung cấp LLM (Gemini hay OpenAI), quyết định.
+Xem `docs/decisions/adr-ai-spike.md`.
 
 ## 2. Pipeline RAG
 ```mermaid
 flowchart LR
   A[Dữ liệu: person, bài đăng, tài liệu] --> B[Chia đoạn]
   B --> C[Tạo embedding]
-  C --> D[(embedding_chunk - pgvector)]
+  C --> D[(ai_embedding_chunk - pgvector)]
   Q[Câu hỏi] --> E[Embedding câu hỏi]
   E --> F[Top-k, lọc family_id]
   D --> F
@@ -40,6 +40,6 @@ Nếu ngữ cảnh không có thông tin, trả lời "Không tìm thấy thông
 |---|---|---|
 | Tìm kiếm ngữ nghĩa | GET /api/v1/search | |
 | Chatbot | POST /api/v1/ai/chat | |
-| Giải thích quan hệ | POST /api/v1/ai/explain-relationship | dùng kết quả của thuật toán, không để LLM tự suy luận |
-| Tóm tắt | POST /api/v1/ai/summarize | |
+| Giải thích quan hệ | POST /api/v1/ai/relationship-explanations | dùng kết quả của thuật toán, không để LLM tự suy luận |
+| Tóm tắt | POST /api/v1/ai/summaries | |
 | Gợi ý | GET /api/v1/ai/recommendations | |

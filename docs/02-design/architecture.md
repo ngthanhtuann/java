@@ -1,6 +1,6 @@
 # Kiến trúc tổng thể
 > **Người viết:** TV4 (Huy Quốc) | **Reviewer:** TV2 (Nguyễn Minh Trí) | **Task Jira:** SCRUM-23 | **Hạn nộp review:** Thứ Tư 7/10
-> **Trạng thái:** Chờ review
+> **Trạng thái:** Đã merge vào `develop` (Sprint 1)
 
 ## 1. Sơ đồ thành phần
 > Thể hiện đúng kiến trúc đề tài: **Web Management Portal**, **Mobile Application**, **AI Service Layer** kết nối qua **RESTful API**. Các khối logic trong Spring Boot backend và cách xử lý lỗi tập trung.
@@ -209,7 +209,7 @@ sequenceDiagram
                 LL-->>GW: timeout / API error
                 GW->>AU: ghi LLM_API_ERROR
                 GW-->>AC: fallback: trả về thông báo<br/>lỗi dịch vụ LLM
-                AC-->>FE: 503 ErrorResponse
+                AC-->>FE: 503 ErrorResponse (AI_001)
             else LLM thành công
                 LL-->>GW: câu trả lời tự nhiên
                 GW->>DB: lưu ai_chat_message
@@ -282,7 +282,7 @@ Hệ thống được thiết kế không chỉ để giải quyết các luồn
 
 ### 6.5. Kiểm vết và Lưu vết hệ thống (Audit Logging)
 * **Ghi log nghiệp vụ:** Hệ thống tích hợp một `AuditService` hoạt động ngầm để ghi nhận các sự kiện bảo mật quan trọng (ai, làm gì, lúc nào).
-* **Truy xuất nguồn gốc:** Cột chuẩn cho các bảng nghiệp vụ: `id`, `created_at`, `updated_at`, `deleted_at`, thêm `created_by`, `updated_by`. (Tuyệt đối không dùng `created_date`).
+* **Truy xuất nguồn gốc:** Cột chuẩn cho các bảng nghiệp vụ: `id`, `created_at`, `updated_at`, `deleted_at`, thêm `created_by`, `updated_by`. Cột thời điểm dùng `TIMESTAMPTZ` (lưu UTC). (Tuyệt đối không dùng `created_date`).
 * **Bảo mật log:** Audit log chỉ ghi sự kiện, tuyệt đối không chứa nội dung prompt thô. Lịch sử hội thoại vẫn được lưu riêng ở bảng `ai_chat_message` theo đúng thời hạn trong `privacy.md`.
 
 ## 7. Quyết định kiến trúc đã chốt (bắt buộc áp dụng)
@@ -292,8 +292,9 @@ Hệ thống được thiết kế không chỉ để giải quyết các luồn
 | 1 | Một schema `public`. Bảng AI có tiền tố `ai_`: `ai_embedding_chunk`, `ai_chat_session`, `ai_chat_message`, `ai_summary_cache`. Chỉ module `ai` đọc, ghi các bảng này; module khác không join. Khi tách service: một migration chuyển `ai_*` sang schema `ai` và cấp tài khoản DB riêng | Đơn giản trong 8 tuần, vẫn sẵn sàng tách sau | Trí (ERD), Lê Nhựt (AI) |
 | 2 | Web và mobile đều dùng thư mục `services/` để gọi API. Kiểu dữ liệu sinh từ OpenAPI (`docs/04-api/openapi/`), không viết tay hai nơi | Một hợp đồng API duy nhất | Lê Nhựt (mobile), Huy Quốc (web) |
 | 3 | Module gọi nhau qua interface Java khi còn một khối. REST nội bộ chỉ dùng khi tách service | Nhanh, dễ test | Tất cả backend |
-| 4 | Cột chuẩn: `id`, `created_at`, `updated_at`, `deleted_at`, thêm `created_by`, `updated_by` cho bảng nghiệp vụ. Không dùng `created_date`. Khóa chính mọi bảng là `UUID` (`DEFAULT gen_random_uuid()`, PostgreSQL 13+; Spring: `@GeneratedValue(strategy = GenerationType.UUID)`); khóa ngoại cũng UUID. Tên bảng `snake_case` số ít, ngoại lệ duy nhất là `users` (vì `user` là từ khóa PostgreSQL) | Khớp ERD, chống đoán ID (IDOR) | Trí, tất cả backend |
+| 4 | Cột chuẩn: `id`, `created_at`, `updated_at`, `deleted_at`, thêm `created_by`, `updated_by` cho bảng nghiệp vụ. Không dùng `created_date`. Khóa chính mọi bảng là `UUID` (`DEFAULT gen_random_uuid()`, PostgreSQL 13+; Spring: `@GeneratedValue(strategy = GenerationType.UUID)`); khóa ngoại cũng UUID. Tên bảng `snake_case` số ít, ngoại lệ duy nhất là `users` (vì `user` là từ khóa PostgreSQL). Cột thời điểm dùng `TIMESTAMPTZ` (lưu UTC); ngày thuần dùng `DATE` | Khớp ERD, chống đoán ID (IDOR) | Trí, tất cả backend |
 | 5 | Backend gồm `common/` và `modules/<tên>/{controller,service,repository,dto,entity}`. Tên module cố định: `auth`, `user`, `admin`, `genealogy`, `community`, `events`, `heritage`, `directory`, `dashboard`, `ai`. `SecurityConfig` chuyển vào `common/config` | Một cấu trúc cho mọi người | Tất cả backend, Tuấn (SCRUM-35) |
 | 6 | Lỗi trả về theo `docs/04-api/conventions.md` (`success:false, error:{code,message,details}`) | Một chuẩn lỗi cho web và mobile | Tất cả backend |
 | 7 | AI: tài khoản chưa xác minh không dùng được (403, `PERM_002`); giới hạn số câu hỏi (429, `RATE_001`); lọc theo `family_id` trước khi tạo ngữ cảnh | Theo `docs/01-srs/privacy.md` | Lê Nhựt |
 | 8 | Mục tiêu triển khai: 2 bản Spring Boot sau Nginx (Sprint 7, SCRUM-96); hiện chạy 1 bản | Đáp ứng NFR-10 | Huy Quốc (Docker) |
+| 9 | Khóa ngoại cơ sở dữ liệu (`FOREIGN KEY ... REFERENCES`) chỉ dùng giữa các bảng trong cùng một module. Tham chiếu sang bảng của module khác (ví dụ `users`, `family`, `person`, `media`, `branch` khi ở module khác) chỉ lưu cột UUID thường, có index; service kiểm tra tồn tại, quyền và `family_id` qua interface Java của module đó | Khớp quyết định 3 (module chỉ gọi nhau qua interface, không join chéo); cho phép tách module thành service sau này | Trí (ERD), tất cả backend |
