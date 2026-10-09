@@ -15,6 +15,7 @@
 Các màu hỗ trợ:
 
 | Token	| Mã màu | Dùng cho |
+|---|---|---|
 | Background| #F5F0E8 | Nền trang |
 | Surface |	#FFFFFF | Card, modal, header |
 | Surface muted | #F9F6F0 | Nền ô nhập, vùng nội dung phụ |
@@ -36,6 +37,7 @@ Các màu hỗ trợ:
 
 ## 3. Component
 | Component | Đặc tả đề xuất |
+|---|---|
  |Nút |	Cao 40px; mobile 44px; bo góc 8px. Primary nền vàng/chữ nâu; secondary nền trắng/viền beige; danger nền đỏ/chữ trắng. Có hover, focus, disabled, loading. |
  |Ô nhập / select |	Cao 44px; chữ 14px; bo góc 8px; label phía trên. Focus có vòng viền rõ; lỗi có viền đỏ và thông báo dưới ô. |
 | Bảng |	Header nền kem; hàng tối thiểu 44px; chữ 14px; đường phân cách nhẹ. Mobile cho cuộn ngang hoặc chuyển sang danh sách card. |
@@ -48,15 +50,64 @@ Các màu hỗ trợ:
 ## 4. Layout
 Header, sidebar, vùng nội dung; có bản responsive.
 
-Desktop hiện tại
-Sidebar: 240px.
-Header: 64px.
-Nội dung: padding ngang 28px, dọc 24px.
-Khoảng cách giữa các khu vực: 24px.
-Bố cục: thống kê phía trên, các khu vực nội dung chia hai cột.
+- Sidebar: 240px.
+- Header: 64px.
+- Nội dung: padding ngang 28px, dọc 24px.
+- Khoảng cách giữa các khu vực: 24px.
+- Bố cục: thống kê phía trên, các khu vực nội dung chia hai cột.
 Responsive đề xuất
 Thiết kế hiện tại mới có bản desktop; chưa có bản tablet/mobile riêng.
 | Kích thước màn hình |	Cách bố trí |
+|---|---|
 | Desktop ≥ 1024px |	Sidebar 240px; nội dung hai cột khi đủ chỗ; thống kê bốn cột |
+| Tablet 768–1023px |	Sidebar chuyển thành drawer; thống kê hai cột; nội dung chính một cột |
+| Mobile < 768px |	Header gọn; padding 16px; form chọn hai người xếp dọc; nút có thể xuống dòng |
+| Mobile nhỏ < 480px |	Thống kê một cột nếu nội dung không đủ chỗ |
 
 > Mã màu và cỡ chữ cũng ghi vào `tailwind.config` của frontend.
+export default {
+  theme: {
+    extend: {
+      colors: {
+        primary: "#2C1810",
+        secondary: "#C9A84C",
+        success: "#2E7D32",
+        error: "#C62828",
+        info: "#1565C0",
+        warning: "#E65100",
+
+        background: "#F5F0E8",
+        surface: "#FFFFFF",
+        "surface-muted": "#F9F6F0",
+        "text-primary": "#2C1810",
+        "text-secondary": "#8B7355",
+        border: "#D4C4A8",
+        "success-soft": "#E8F5E9",
+        "error-soft": "#FCE4EC",
+      },
+
+      fontFamily: {
+        sans: ["Inter", "sans-serif"],
+      },
+
+      fontSize: {
+        "page-title": ["24px", { lineHeight: "32px", fontWeight: "700" }],
+        "section-title": ["18px", { lineHeight: "26px", fontWeight: "600" }],
+        body: ["14px", { lineHeight: "22px" }],
+        label: ["14px", { lineHeight: "20px", fontWeight: "500" }],
+        caption: ["12px", { lineHeight: "18px" }],
+        metric: ["28px", { lineHeight: "36px", fontWeight: "700" }],
+      },
+
+      borderRadius: {
+        control: "8px",
+        card: "12px",
+      },
+
+      spacing: {
+        sidebar: "240px",
+        header: "64px",
+      },
+    },
+  },
+};
