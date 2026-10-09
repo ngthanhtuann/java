@@ -176,6 +176,8 @@ Hệ thống chỉ có 4 vai trò (SRS Phụ lục A): `GUEST`, `MEMBER`, `BRANC
 Dùng PostgreSQL, thay đổi schema qua Flyway migration (NFR-07). Khóa chính kiểu **UUID** (khớp mẫu `docs/03-database/data-dictionary.md`, nhóm đã chốt). Theo quy ước chung (`architecture.md` mục 7, quyết định 4): tên bảng `snake_case` số ít; **mọi bảng có `id`, `created_at`, `updated_at`, `deleted_at`** (xóa mềm); bảng nghiệp vụ thêm **`created_by`, `updated_by`**; không dùng `created_date`. Các bảng không có tiền tố `ai_`; module khác không join trực tiếp các bảng này (mục 9). Thời điểm (`created_at`, `updated_at`, `deleted_at`) dùng `TIMESTAMPTZ` (lưu theo UTC), khớp định dạng ISO-8601 có múi giờ ở `conventions.md` mục 5; ngày thuần (ngày sinh, ngày mất, ngày cưới) dùng `DATE`.
 
 > **Quy ước:** khóa chính mọi bảng là `UUID` (`DEFAULT gen_random_uuid()`); bảng người dùng tên `users` (ngoại lệ duy nhất của quy ước tên số ít, vì `user` là từ khóa PostgreSQL). Cả hai đã được nhóm chốt.
+>
+> **Khóa ngoại chỉ trong cùng module** (`architecture.md` mục 7, quyết định 9): giữa các bảng của module Gia phả (`family`, `branch`, `person`, `parent_child`, `marriage`) dùng FK như bình thường. Cột tham chiếu sang bảng của module khác (`created_by`, `updated_by`, `user_id` sang `users` của module auth; `avatar_media_id` sang `media` của module community) chỉ lưu UUID có index, không tạo FK; service kiểm tra tồn tại, quyền và `family_id` qua interface Java của module đó.
 
 | Bảng | Mục đích | Task tạo migration |
 |---|---|---|
@@ -191,8 +193,8 @@ Dùng PostgreSQL, thay đổi schema qua Flyway migration (NFR-07). Khóa chính
 | id | UUID | PK | |
 | name | VARCHAR(150) | NOT NULL | Tên gia đình |
 | description | TEXT | | |
-| created_by | UUID | FK `users(id)`, NOT NULL | Người tạo, cũng là "chủ gia đình" |
-| updated_by | UUID | FK `users(id)`, NULL | |
+| created_by | UUID | NOT NULL; tham chiếu `users(id)` của module auth, kiểm tra ở service (không FK) | Người tạo, cũng là "chủ gia đình" |
+| updated_by | UUID | NULL; tham chiếu `users(id)` của module auth, kiểm tra ở service (không FK) | |
 | created_at | TIMESTAMPTZ | NOT NULL, default now() | |
 | updated_at | TIMESTAMPTZ | NOT NULL, default now() | |
 | deleted_at | TIMESTAMPTZ | NULL | Xóa mềm |
@@ -208,13 +210,13 @@ Index: `(created_by)`.
 | parent_branch_id | UUID | FK `branch(id)`, NULL | Chi cha |
 | origin_person_id | UUID | FK `person(id)`, NULL | Người tổ của chi |
 | description | TEXT | | |
-| created_by | UUID | FK `users(id)`, NOT NULL | |
-| updated_by | UUID | FK `users(id)`, NULL | |
+| created_by | UUID | NOT NULL; tham chiếu `users(id)` của module auth, kiểm tra ở service (không FK) | |
+| updated_by | UUID | NULL; tham chiếu `users(id)` của module auth, kiểm tra ở service (không FK) | |
 | created_at | TIMESTAMPTZ | NOT NULL, default now() | |
 | updated_at | TIMESTAMPTZ | NOT NULL, default now() | |
 | deleted_at | TIMESTAMPTZ | NULL | Xóa mềm |
 
-Index: `(family_id)`, `(parent_branch_id)`.
+Index: `(family_id)`, `(parent_branch_id)`, `(origin_person_id)`, `(created_by)`.
 
 ### 6.3 Bảng `person`
 | Cột | Kiểu | Ràng buộc | Ghi chú |
@@ -232,17 +234,17 @@ Index: `(family_id)`, `(parent_branch_id)`.
 | is_deceased | BOOLEAN | NOT NULL, default false | |
 | death_date | DATE | NULL, CHECK (death_date >= birth_date) | |
 | burial_place | VARCHAR(255) | | Nơi an táng; chỉ có ý nghĩa khi đã mất |
-| avatar_media_id | UUID | FK `media(id)`, NULL | Ảnh đại diện. Tệp lưu ở bảng `media` của module `community` (`owner_type = 'PERSON'`), chỉ phục vụ qua endpoint có kiểm tra quyền (`conventions.md` mục 7.1), không lưu đường dẫn công khai |
-| user_id | UUID | FK `users(id)`, NULL | Nối với tài khoản; phải NULL nếu dưới 16 tuổi (BR-GEN-16) |
+| avatar_media_id | UUID | NULL; tham chiếu `media(id)` của module community, kiểm tra ở service (không FK) | Ảnh đại diện. Tệp lưu ở bảng `media` của module `community` (`owner_type = 'PERSON'`), chỉ phục vụ qua endpoint có kiểm tra quyền (`conventions.md` mục 7.3), không lưu đường dẫn công khai |
+| user_id | UUID | NULL; tham chiếu `users(id)` của module auth, kiểm tra ở service (không FK) | Nối với tài khoản; phải NULL nếu dưới 16 tuổi (BR-GEN-16) |
 | note | TEXT | | Không ghi nguyên nhân tử vong chi tiết |
-| created_by | UUID | FK `users(id)`, NOT NULL | |
-| updated_by | UUID | FK `users(id)`, NULL | |
+| created_by | UUID | NOT NULL; tham chiếu `users(id)` của module auth, kiểm tra ở service (không FK) | |
+| updated_by | UUID | NULL; tham chiếu `users(id)` của module auth, kiểm tra ở service (không FK) | |
 | created_at | TIMESTAMPTZ | NOT NULL | |
 | updated_at | TIMESTAMPTZ | NOT NULL | |
 | deleted_at | TIMESTAMPTZ | NULL | Xóa mềm |
 
 Ràng buộc: `CHECK (is_deceased OR birth_date IS NOT NULL)` (người còn sống bắt buộc có ngày sinh); `UNIQUE (user_id) WHERE user_id IS NOT NULL AND deleted_at IS NULL`.
-Index: `(family_id)`, `(branch_id)`, `(full_name)` (hỗ trợ tìm kiếm), `(family_id, birth_date)`, `(family_id, current_province)`.
+Index: `(family_id)`, `(branch_id)`, `(full_name)` (hỗ trợ tìm kiếm), `(family_id, birth_date)`, `(family_id, current_province)`, `(avatar_media_id)`, `(created_by)`; `user_id` đã có chỉ mục duy nhất từng phần ở trên.
 
 ### 6.4 Bảng `parent_child`
 | Cột | Kiểu | Ràng buộc | Ghi chú |
@@ -252,13 +254,13 @@ Index: `(family_id)`, `(branch_id)`, `(full_name)` (hỗ trợ tìm kiếm), `(f
 | child_id | UUID | FK `person(id)`, NOT NULL | |
 | parent_role | VARCHAR(10) | NOT NULL, CHECK IN ('FATHER','MOTHER') | |
 | kind | VARCHAR(12) | NOT NULL, default 'BIOLOGICAL', CHECK IN ('BIOLOGICAL','ADOPTED','STEP') | |
-| created_by | UUID | FK `users(id)`, NOT NULL | |
-| updated_by | UUID | FK `users(id)`, NULL | |
+| created_by | UUID | NOT NULL; tham chiếu `users(id)` của module auth, kiểm tra ở service (không FK) | |
+| updated_by | UUID | NULL; tham chiếu `users(id)` của module auth, kiểm tra ở service (không FK) | |
 | created_at | TIMESTAMPTZ | NOT NULL | |
 | updated_at | TIMESTAMPTZ | NOT NULL | |
 | deleted_at | TIMESTAMPTZ | NULL | Xóa mềm |
 
-Ràng buộc: `CHECK (parent_id <> child_id)`; `UNIQUE (parent_id, child_id) WHERE deleted_at IS NULL`; **chỉ mục duy nhất từng phần** `UNIQUE (child_id, parent_role) WHERE kind = 'BIOLOGICAL' AND deleted_at IS NULL` (đảm bảo tối đa 1 cha ruột và 1 mẹ ruột). Index: `(parent_id)`, `(child_id)`.
+Ràng buộc: `CHECK (parent_id <> child_id)`; `UNIQUE (parent_id, child_id) WHERE deleted_at IS NULL`; **chỉ mục duy nhất từng phần** `UNIQUE (child_id, parent_role) WHERE kind = 'BIOLOGICAL' AND deleted_at IS NULL` (đảm bảo tối đa 1 cha ruột và 1 mẹ ruột). Index: `(parent_id)`, `(child_id)`, `(created_by)`.
 
 ### 6.5 Bảng `marriage`
 | Cột | Kiểu | Ràng buộc | Ghi chú |
@@ -269,13 +271,13 @@ Ràng buộc: `CHECK (parent_id <> child_id)`; `UNIQUE (parent_id, child_id) WHE
 | status | VARCHAR(10) | NOT NULL, CHECK IN ('MARRIED','DIVORCED','WIDOWED') | |
 | start_date | DATE | NULL | |
 | end_date | DATE | NULL | Ngày ly hôn hoặc góa |
-| created_by | UUID | FK `users(id)`, NOT NULL | |
-| updated_by | UUID | FK `users(id)`, NULL | |
+| created_by | UUID | NOT NULL; tham chiếu `users(id)` của module auth, kiểm tra ở service (không FK) | |
+| updated_by | UUID | NULL; tham chiếu `users(id)` của module auth, kiểm tra ở service (không FK) | |
 | created_at | TIMESTAMPTZ | NOT NULL | |
 | updated_at | TIMESTAMPTZ | NOT NULL | |
 | deleted_at | TIMESTAMPTZ | NULL | Xóa mềm |
 
-Ràng buộc: `CHECK (person1_id <> person2_id)`. Các quy tắc "một hôn nhân `MARRIED` tại một thời điểm", "không cho kết hôn người thân" và "hai người cùng gia đình" kiểm tra ở tầng service (DB không biểu diễn gọn). Index: `(person1_id)`, `(person2_id)`.
+Ràng buộc: `CHECK (person1_id <> person2_id)`. Các quy tắc "một hôn nhân `MARRIED` tại một thời điểm", "không cho kết hôn người thân" và "hai người cùng gia đình" kiểm tra ở tầng service (DB không biểu diễn gọn). Index: `(person1_id)`, `(person2_id)`, `(created_by)`.
 
 ### 6.6 Vì sao dùng bảng quan hệ `parent_child` thay vì cột `parent_id` trong `person`
 1. **Một người có hai cha mẹ.** Một cột `parent_id` chỉ lưu được một người. Dùng hai cột `father_id`, `mother_id` thì không biểu diễn được cha mẹ nuôi hoặc cha mẹ kế.
@@ -348,7 +350,7 @@ Tất cả API nằm dưới `/api/v1`, tên tài nguyên số nhiều, theo `do
 | GET | `/families/{familyId}/tree` | Lấy cây dạng nodes và edges | UC-GEN-06 | MEMBER đã xác minh trở lên |
 | GET | `/relationships` | Truy vấn A là gì của B, kèm đường đi (`personA`, `personB`) | UC-GEN-07, 08 | MEMBER đã xác minh trở lên |
 
-### 7.2 Mã lỗi riêng của module (theo `conventions.md` mục 3.2)
+### 7.2 Mã lỗi riêng của module (theo `conventions.md` mục 3.1)
 
 Mã chung dùng nguyên: `VALID_001` (400), `NOT_FOUND_001` (404), `PERM_001` (403, không đủ quyền hoặc gia đình khác), `PERM_002` (403, chưa xác minh), `AUTH_002` (401). Mã riêng của module (đều HTTP 409, vi phạm quy tắc nghiệp vụ):
 
@@ -391,12 +393,12 @@ Ngày mất trước ngày sinh, người còn sống thiếu ngày sinh, chi h�
 
 | Với module | Cách làm | Quy ước |
 |---|---|---|
-| `auth`, `admin` (SCRUM-26, 35, 57) | Biết người dùng thuộc gia đình nào, đã xác minh chưa, vai trò gì qua bảng `member_verification`; module Gia phả không tạo bảng thành viên riêng. | Chỉ lưu `user_id` (UUID), không dùng quan hệ entity xuyên module |
+| `auth`, `admin` (SCRUM-26, 35, 57) | Biết người dùng thuộc gia đình nào, đã xác minh chưa, vai trò gì qua bảng `member_verification`; module Gia phả không tạo bảng thành viên riêng. | Chỉ lưu `user_id`, `created_by`, `updated_by` (UUID, không FK), không dùng quan hệ entity xuyên module |
 | Audit log (SCRUM-57) | Ghi log tự động qua cơ chế chung (AOP hoặc event listener) khi tạo, sửa, xóa. | BR-GEN-11 |
 | `ai` (SCRUM-55, 63) | Cung cấp dữ liệu thành viên, quan hệ cho embedding qua **interface Java** của module `genealogy` (tên chốt khi làm SCRUM-37, ví dụ `GenealogyGateway`); báo `ai` cập nhật embedding khi dữ liệu đổi. | Quyết định 3 trong `architecture.md`; BR-GEN-18 |
 | `directory` | Tìm danh bạ theo tỉnh/thành dùng `person.current_province` và theo thế hệ (mục 6.8) qua interface Java. | Không join trực tiếp bảng `person`, `parent_child` |
 | `dashboard` | Thống kê số thành viên, giới tính, thế hệ (mục 6.8) qua interface Java. | Không join trực tiếp |
-| `community` (SCRUM-20) | Ảnh đại diện thành viên lưu ở bảng `media` (`owner_type = 'PERSON'`); Gia phả chỉ giữ `avatar_media_id`, không tạo bảng ảnh riêng. | `conventions.md` mục 7.1; ảnh và tệp đính kèm dùng `media` của `community` |
+| `community` (SCRUM-20) | Ảnh đại diện thành viên lưu ở bảng `media` (`owner_type = 'PERSON'`); Gia phả chỉ giữ `avatar_media_id` (UUID, không FK), không tạo bảng ảnh riêng; service kiểm tra tệp tồn tại và cùng `family_id` qua interface của `community`. | `conventions.md` mục 7.3; ảnh và tệp đính kèm dùng `media` của `community` |
 
 ---
 
@@ -412,5 +414,5 @@ Ngày mất trước ngày sinh, người còn sống thiếu ngày sinh, chi h�
 3. Con nuôi, con kế có được tính trong thuật toán quan hệ họ hàng không? (BR-GEN-13)
 4. Nhóm hiểu FR-GEN-07 "Relationship visualization" là tô sáng đường quan hệ giữa hai người (như UC-GEN-07), hay là toàn bộ việc vẽ cây? Nếu là vẽ cây thì gộp UC-GEN-07 vào UC-GEN-06.
 5. Ngưỡng trẻ em là dưới 16 tuổi (theo `privacy.md`): cần nhóm xác nhận. (BR-GEN-10, 16)
-6. Các mã `GEN_001` đến `GEN_013` ở mục 7.2 là mã riêng của module, theo quy tắc `<MODULE>_<số>` (HTTP 409) ở `conventions.md` mục 3.2; không cần thêm vào bảng mã chung.
-7. Cách tính thế hệ ở mục 6.8 (người vào gia đình bằng hôn nhân lấy đời của vợ/chồng) cần nhóm xác nhận; `directory` và `dashboard` phụ thuộc vào cách tính này.
+6. Các mã `GEN_001` đến `GEN_013` ở mục 7.2 là mã riêng của module, theo quy tắc `<MODULE>_<số>` (HTTP 409) ở `conventions.md` mục 3.1; không cần thêm vào bảng mã chung.
+7. Cách tính thế hệ ở mục 6.8 (người vào gia đình bằng hôn nhân lấy đời của vợ/chồng): đang áp dụng tạm, chờ nhóm xác nhận; `directory` và `dashboard` phụ thuộc vào cách tính này.

@@ -215,7 +215,7 @@ Sơ đồ thể hiện 4 actor theo hệ thống: `MEMBER`, `BRANCH_ADMIN`, `SYS
 | BR-COM-05 | Chỉ người tạo được sửa bài. Xóa bài được phép với người tạo, `BRANCH_ADMIN` trong phạm vi chi, hoặc `SYSTEM_ADMIN` khi kiểm duyệt; xóa mềm qua `deleted_at`. |
 | BR-COM-06 | Thành viên chỉ được xem và bình luận trong phạm vi nội dung mình có quyền xem. Người dùng chỉ được sửa/xóa bình luận của chính mình; `BRANCH_ADMIN` trong phạm vi và `SYSTEM_ADMIN` có thể xóa bình luận vi phạm. Độ dài nội dung phải được kiểm tra ở backend; giới hạn số ký tự cụ thể cần thống nhất với SRS nếu chưa có. |
 | BR-COM-07 | Mỗi người dùng chỉ có một reaction đang hoạt động trên mỗi bài; các giá trị hợp lệ: `LIKE`, `LOVE`, `HAHA`, `SAD`. Người dùng chỉ được sửa/xóa reaction của mình. |
-| BR-COM-08 | Ảnh tải lên chỉ nhận `jpg`, `png`, `webp`, tối đa 5 MB; tên tệp lưu trên kho (`storage_key`) sinh bằng UUID, tên gốc đã làm sạch lưu ở `file_name` chỉ để hiển thị. Ảnh không được công khai bằng URL trực tiếp, phải phục vụ qua endpoint kiểm tra quyền. Ảnh có `owner_type` là `HERITAGE` hoặc `PERSON` tải lên bằng `POST /media`; quyền trên tài nguyên sở hữu do module `heritage`/`genealogy` quyết định. |
+| BR-COM-08 | Ảnh tải lên chỉ nhận `jpg`, `png`, `webp`, tối đa 5 MB mỗi tệp. Ngoại lệ (đề xuất, chờ nhóm xác nhận ở họp Sprint 2): với `owner_type = HERITAGE` cho phép thêm `pdf`, tối đa 10 MB mỗi tệp, để lưu tài liệu lịch sử và kho lưu trữ số (FR-HER-01, FR-HER-05). Tổng kích thước mỗi request vẫn tối đa 10 MB. Sai định dạng trả 415 `FILE_002`, quá kích thước trả 413 `FILE_001`. Tên tệp lưu trên kho (`storage_key`) sinh bằng UUID, tên gốc đã làm sạch lưu ở `file_name` chỉ để hiển thị. Ảnh không được công khai bằng URL trực tiếp, phải phục vụ qua endpoint kiểm tra quyền. Ảnh có `owner_type` là `HERITAGE` hoặc `PERSON` tải lên bằng `POST /media`; quyền trên tài nguyên sở hữu do module `heritage`/`genealogy` quyết định. |
 | BR-COM-09 | Chỉ `BRANCH_ADMIN` trong phạm vi quản lý hoặc `SYSTEM_ADMIN` được tạo/sửa thông báo; `announcement` có `is_pinned` để biểu diễn trạng thái ghim. |
 | BR-COM-10 | Xóa bài, bình luận, reaction, thông báo hoặc media dùng xóa mềm khi tài nguyên có `deleted_at`; hành động xóa nội dung cần audit log theo cơ chế chung SCRUM-57/NFR-11. |
 | BR-EVT-01 | Chỉ MEMBER đã xác minh, `BRANCH_ADMIN` hoặc `SYSTEM_ADMIN` được tạo sự kiện. Người tạo, `BRANCH_ADMIN` trong phạm vi và `SYSTEM_ADMIN` được sửa/xóa sự kiện theo quyền tương ứng. |
@@ -237,7 +237,7 @@ Mọi API cần có kiểm thử quyền truy cập chéo: người dùng thuộ
 | `post` | Bài đăng (có trường loại: POST / NEWS) | Hoàn thành |
 | `comment` | Bình luận | Hoàn thành |
 | `reaction` | Reaction | Hoàn thành |
-| `media` | Ảnh và tệp tải lên | Hoàn thành |
+| `media` | Ảnh và tệp tải lên (tệp `pdf` chỉ với `owner_type = HERITAGE`) | Hoàn thành |
 | `announcement` | Thông báo ghim | Hoàn thành |
 | `notification` | Thông báo gửi người dùng | Hoàn thành |
 | `event` | Sự kiện | Hoàn thành |
@@ -298,7 +298,7 @@ Mọi API cần có kiểm thử quyền truy cập chéo: người dùng thuộ
 | file_name | VARCHAR(255) | NOT NULL | Tên tệp gốc đã làm sạch, chỉ để hiển thị |
 | storage_key | VARCHAR(255) | NOT NULL, UNIQUE | Khóa lưu trữ nội bộ (sinh bằng UUID); không trả ra API, ảnh chỉ lấy qua `GET /media/{id}/content` |
 | caption | VARCHAR(255) | NULL | Chú thích ảnh |
-| file_type | VARCHAR(100) | NOT NULL | Loại tệp |
+| file_type | VARCHAR(100) | NOT NULL | Loại tệp (MIME), ví dụ `image/jpeg`, `image/png`, `image/webp`; `application/pdf` chỉ với `owner_type = HERITAGE` (BR-COM-08) |
 | created_by | UUID | NOT NULL | Người tải lên |
 | updated_by | UUID | NULL | Người cập nhật |
 | created_at | TIMESTAMPTZ | NOT NULL | Thời gian tạo |
@@ -328,7 +328,7 @@ API trả `contentType` ← `file_type`, `fileSize` ← `file_size`; `contentUrl
 | Cột | Kiểu | Khóa / Ràng buộc | Mô tả |
 |---|---|---|---|
 | id | UUID | PK | Mã thông báo |
-| user_id | UUID | NOT NULL, FK | Người nhận thông báo |
+| user_id | UUID | NOT NULL | Người nhận thông báo; tham chiếu `users(id)` của module auth, kiểm tra ở service, không FK chéo module |
 | ref_type | VARCHAR(30) | NULL | Loại tài nguyên tham chiếu, ví dụ EVENT hoặc ANNOUNCEMENT |
 | ref_id | UUID | NULL | ID tài nguyên tham chiếu |
 | type | VARCHAR(50) | NOT NULL, CHECK | `EVENT_REMINDER_24H`, `EVENT_REMINDER_1H`, `ANNOUNCEMENT` (đối chiếu SRS nếu còn loại khác) |
@@ -367,7 +367,7 @@ API trả `contentType` ← `file_type`, `fileSize` ← `file_size`; `contentUrl
 |---|---|---|---|
 | id | UUID | PK | Mã bản ghi tham dự |
 | event_id | UUID | NOT NULL, FK | Sự kiện |
-| user_id | UUID | NOT NULL, FK | Người được ghi nhận tham dự (khác `created_by` khi người tạo sự kiện thêm hộ) |
+| user_id | UUID | NOT NULL | Người được ghi nhận tham dự (khác `created_by` khi người tạo sự kiện thêm hộ); tham chiếu `users(id)` của module auth, kiểm tra ở service, không FK chéo module |
 | rsvp_status | VARCHAR(20) | NOT NULL, CHECK | `GOING`, `NOT_GOING` hoặc `MAYBE`; mặc định `MAYBE` khi người tạo sự kiện thêm hộ |
 | created_by | UUID | NOT NULL | Người thực hiện thao tác tạo bản ghi |
 | updated_by | UUID | NULL | Người cập nhật |
@@ -375,11 +375,12 @@ API trả `contentType` ← `file_type`, `fileSize` ← `file_size`; `contentUrl
 | updated_at | TIMESTAMPTZ | NOT NULL | Thời gian cập nhật |
 | deleted_at | TIMESTAMPTZ | NULL | Xóa mềm |
 
-**Ràng buộc:** `event_id` tham chiếu `event(id)`, `user_id` tham chiếu `users(id)`; chỉ mục duy nhất từng phần `(event_id, user_id) WHERE deleted_at IS NULL` bảo đảm một RSVP hoạt động cho mỗi người/sự kiện. `created_by` là người thực hiện thao tác (có thể khác `user_id`).
+**Ràng buộc:** `event_id` là FK tới `event(id)` (cùng module); `user_id` chỉ lưu UUID của `users(id)` thuộc module auth, không tạo FK, service kiểm tra người dùng tồn tại và cùng `family_id`; chỉ mục duy nhất từng phần `(event_id, user_id) WHERE deleted_at IS NULL` bảo đảm một RSVP hoạt động cho mỗi người/sự kiện. `created_by` là người thực hiện thao tác (có thể khác `user_id`).
 
 ### Khóa ngoại và chỉ mục
 
-- `comment.post_id` → `post(id)`; `reaction.post_id` → `post(id)`; `event_participant.event_id` → `event(id)`; `notification.user_id` → `users(id)`; `event_participant.user_id` → `users(id)` (tên bảng tài khoản `users` đã chốt ở `architecture.md` mục 7).
+- Khóa ngoại chỉ dùng trong cùng module (`architecture.md` mục 7, quyết định 9): `comment.post_id` → `post(id)`; `reaction.post_id` → `post(id)`; `event_participant.event_id` → `event(id)`.
+- `notification.user_id` và `event_participant.user_id` tham chiếu `users(id)` của module auth (tên bảng `users` đã chốt ở `architecture.md` mục 7): chỉ lưu UUID có chỉ mục, không tạo FK; service kiểm tra tồn tại và `family_id` qua interface Java của module auth.
 - `family_id`, `branch_id`, `created_by`, `updated_by` thuộc module khác: lưu UUID và kiểm tra quyền ở service, không tạo FK chéo module.
 - Chỉ mục đề xuất: `post(family_id, created_at DESC)`; `comment(post_id, created_at)`; `reaction(post_id, created_by) WHERE deleted_at IS NULL` UNIQUE; `event(family_id, start_at)`; `event_participant(event_id, user_id) WHERE deleted_at IS NULL` UNIQUE; `notification(user_id, is_read, created_at DESC)`; `notification(user_id, ref_id, type) WHERE deleted_at IS NULL AND ref_id IS NOT NULL` UNIQUE; `media(owner_type, owner_id)`.
 
@@ -414,7 +415,7 @@ Hiện tài liệu chưa xác định mã lỗi nghiệp vụ riêng cho Communi
 | DELETE | `/api/v1/posts/{id}/reactions` | Xóa reaction của mình | MEMBER đã xác minh |
 | POST | `/api/v1/posts/{id}/media` | Tải ảnh lên bài đăng | Thành viên có quyền xem/đăng bài |
 | GET | `/api/v1/posts/{id}/media` | Danh sách ảnh của bài đăng | Thành viên có quyền xem bài |
-| POST | `/api/v1/media` | Tải ảnh có `ownerType` là `HERITAGE` hoặc `PERSON` (multipart: `file`, `ownerType`, `ownerId`, `caption`) | Theo quyền sửa tài nguyên sở hữu (module `heritage`/`genealogy`) |
+| POST | `/api/v1/media` | Tải ảnh có `ownerType` là `HERITAGE` hoặc `PERSON`, hoặc tệp `pdf` với `ownerType = HERITAGE` (multipart: `file`, `ownerType`, `ownerId`, `caption`) | Theo quyền sửa tài nguyên sở hữu (module `heritage`/`genealogy`) |
 | GET | `/api/v1/media/{id}/content` | Phục vụ nội dung ảnh sau khi kiểm tra quyền | Thành viên có quyền xem tài nguyên |
 | DELETE | `/api/v1/media/{id}` | Xóa media | Người tạo hoặc quản trị được phép |
 | POST | `/api/v1/announcements` | Tạo thông báo | BRANCH_ADMIN; SYSTEM_ADMIN |
@@ -445,7 +446,7 @@ Hiện tài liệu chưa xác định mã lỗi nghiệp vụ riêng cho Communi
 ### Liên kết module
 
 - Package backend: `com.familyconnect.modules.community` và `com.familyconnect.modules.events`.
-- `events` và `heritage` sử dụng ảnh thông qua Java interface của module `community`; không tạo bảng ảnh riêng. `genealogy` lưu ảnh đại diện qua `person.avatar_media_id` trỏ vào `media` (`owner_type = PERSON`).
+- `events` và `heritage` sử dụng ảnh thông qua Java interface của module `community`; không tạo bảng ảnh riêng. `genealogy` lưu ảnh đại diện qua `person.avatar_media_id` (UUID, không FK) trỏ vào `media` (`owner_type = PERSON`).
 - Khi bài đăng hoặc sự kiện được tạo, sửa hay xóa, module tương ứng gọi `AiGateway` để thông báo module `ai` cập nhật embedding; không gọi REST nội bộ.
 - Ảnh không được công khai bằng URL lưu trữ trực tiếp; endpoint nội dung phải kiểm tra quyền truy cập trước khi trả file.
 
@@ -462,6 +463,7 @@ Link Figma và ảnh wireframe sẽ được bổ sung theo tiến độ thiết
 - [ ] Nhắc nhở sự kiện gửi qua thông báo trong ứng dụng chỉ, hay gửi thêm push notification trên mobile?
 - [ ] Xác nhận thời điểm nhắc nhở là 24 giờ và 1 giờ trước `start_at` hay lịch khác?
 - [ ] Bài đăng/thông báo/sự kiện có `branch_id` của một chi có được hiển thị cho các chi con không? Quy tắc quyền chi con cần thống nhất với SCRUM-18.
-- [x] Tên bảng tài khoản dùng cho FK `notification.user_id` và `event_participant.user_id`: đã chốt `users` (`architecture.md` mục 7).
+- [x] Tên bảng tài khoản mà `notification.user_id` và `event_participant.user_id` tham chiếu: đã chốt `users` (`architecture.md` mục 7); hai cột này chỉ lưu UUID, không tạo FK chéo module (quyết định 9).
 - [ ] Xác nhận giới hạn độ dài nội dung bài đăng/bình luận theo SRS hoặc validation chung.
 - [ ] Khi thông báo/nhắc nhở được gửi, hệ thống có tạo một bản ghi `notification` riêng cho từng thành viên nhận không?
+- [ ] Cho phép tệp `pdf` (tối đa 10 MB) với `owner_type = HERITAGE` (BR-COM-08, `conventions.md` mục 7.3): đề xuất, chờ nhóm xác nhận ở họp Sprint 2.

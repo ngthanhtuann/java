@@ -304,6 +304,7 @@ Khi vượt giới hạn request, trả HTTP `429` với mã `RATE_001` và head
 * Request tải tệp sử dụng `multipart/form-data`, tên trường là `file`.
 * Định dạng ảnh được hỗ trợ: `jpg`, `png`, `webp`.
 * Mỗi tệp ảnh tối đa 5 MB.
+* Ngoại lệ cho tài liệu lịch sử và kho lưu trữ số (FR-HER-01, FR-HER-05): với `owner_type = HERITAGE`, cho phép thêm định dạng `pdf`, tối đa 10 MB mỗi tệp. Mọi trường hợp khác giữ `jpg`, `png`, `webp`, tối đa 5 MB. Đây là đề xuất, chờ nhóm xác nhận ở họp Sprint 2.
 * Tên tệp lưu trữ được tạo bằng UUID, không sử dụng trực tiếp tên tệp do người dùng cung cấp làm tên lưu trữ.
 * Tệp chỉ được truy cập qua endpoint có kiểm tra quyền, không công khai chỉ bằng URL tệp.
 * Tệp vượt giới hạn trả HTTP `413 FILE_001`.
