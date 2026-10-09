@@ -1,7 +1,7 @@
 # Đặc tả thuật toán xác định quan hệ họ hàng ("A là gì của B")
 
-> **Người viết:** TV2 (Nguyễn Minh Trí) | **Reviewer:** TV5 (Lê Nhựt) | **Task Jira:** SCRUM-19 (1-06)
-> **Phiên bản:** 0.2 (đã sửa theo review của TV1) | **Nhánh:** `docs/SCRUM-19-relationship-algorithm`
+> **Người viết:** TV2 (Nguyễn Minh Trí) | **Reviewer:** TV1 (Nguyễn Thanh Tuấn) | **Task Jira:** SCRUM-19 (1-06) | **Trạng thái:** Chờ review
+> **Phiên bản:** 0.3 (đã sửa theo review lần 2 của TV1) | **Nhánh:** `docs/SCRUM-19-relationship-algorithm`
 > **Liên quan:** FR-GEN-07, FR-GEN-08, FR-AI-03 | UC-GEN-07 «include» UC-GEN-08 | API `GET /relationships?personA=&personB=` | bảng `parent_child`, `person`, `marriage`
 
 ---
@@ -87,7 +87,7 @@ Chỉ xét vợ/chồng còn hôn nhân (`MARRIED`) hoặc góa (`WIDOWED`); ng�
 2. Nếu A = B: trả "cùng một người" (`supported = true`, a = b = 0, `path` chỉ có A).
 3. **Tính huyết thống** bằng hàm `bloodRelation(A, B)`:
    1. **Tìm tổ tiên** của A và của B bằng truy vấn đệ quy lên `parent_child`, giới hạn **6 đời**. Mỗi tổ tiên lưu: số đời (`depth`), vai trò ở **bước đi lên đầu tiên** (`firstRole`), vai trò ở **bước cuối** vào tổ tiên đó (`lastRole`), đường đi, và các loại cạnh đã đi qua (ruột, nuôi, kế). Bản thân A và B là tổ tiên ở độ sâu 0. Khi duyệt, **luôn đi qua cha (FATHER) trước, rồi mới đến mẹ (MOTHER)**; tổ tiên nào đã gặp ở độ sâu nhỏ hơn thì giữ nguyên (đường ngắn nhất, không ghi đè).
-   2. **Chọn LCA:** giao hai tập tổ tiên; chọn người theo thứ tự ưu tiên: (1) **a + b nhỏ nhất**; (2) nếu hòa, người có `lastRole = FATHER` (ưu tiên đường qua cha); (3) nếu vẫn hòa, người có **id nhỏ hơn**. Nhờ vậy `commonAncestorId` luôn cố định cho cùng một dữ liệu. Ví dụ An và Tâm có hai tổ tiên cùng độ sâu là Tổ và Cội: chọn **Tổ** vì Tổ là cha.
+   2. **Chọn LCA:** giao hai tập tổ tiên; chọn người theo thứ tự ưu tiên: (1) **a + b nhỏ nhất**; (2) nếu hòa, người có `lastRole = FATHER` (ưu tiên đường qua cha; `lastRole` tính ở phía A, riêng khi A chính là tổ tiên đó thì tính ở phía B); (3) nếu vẫn hòa, người có **id nhỏ hơn**. Nhờ vậy `commonAncestorId` luôn cố định cho cùng một dữ liệu. Ví dụ An và Tâm có hai tổ tiên cùng độ sâu là Tổ và Cội: chọn **Tổ** vì Tổ là cha.
    3. **Với (1, 1):** nếu có từ 2 tổ tiên chung ở độ sâu 1 thì là anh chị em ruột (hoặc cùng cha mẹ nuôi); chỉ có 1 thì xét `lastRole` của người đó: FATHER ghi "(cùng cha khác mẹ)", MOTHER ghi "(cùng mẹ khác cha)".
    4. **Xác định nội/ngoại** theo mục 2.1; **so tuổi** bằng `birth_date`, nếu trống thì `birth_year` (mục 2.1); xét **giới tính** (kể cả `OTHER`) rồi **tra bảng ánh xạ** (mục 2.2, 2.3).
    5. Cặp (a, b) không có trong bảng: trả kết quả `supported = false` kèm a, b.
@@ -164,7 +164,7 @@ function bloodRelation(A, B):        // trả null nếu không có tổ tiên c
 
     lca = argmin over x in common of
               ( ancA[x].depth + ancB[x].depth,                  // 1. tổng bước nhỏ nhất
-                lastRole(x) == FATHER ? 0 : 1,                  // 2. ưu tiên đường qua cha
+                lastRole(x) == FATHER ? 0 : 1,                  // 2. ưu tiên đường qua cha; lastRole(x) = ancA[x].lastRole, nếu A chính là x (a = 0) thì lấy ancB[x].lastRole
                 x.id )                                          // 3. id nhỏ hơn
     a, b   = ancA[lca].depth, ancB[lca].depth
     fa, fb = ancA[lca].firstRole, ancB[lca].firstRole
@@ -204,7 +204,7 @@ function ancestors(p):               // BFS lên tối đa 6 đời, duyệt FAT
 
 function side(role):  return role == FATHER ? "nội" : "ngoại"
 
-function older(X, Y):                // lỗi 6: ưu tiên birth_date, sau đó birth_year
+function older(X, Y):                // ưu tiên birth_date, nếu trống thì birth_year
     dx = X.birth_date ?? X.birth_year        // người còn sống luôn có birth_date (BR-GEN-17)
     dy = Y.birth_date ?? Y.birth_year
     if dx is null or dy is null or dx == dy: return null
