@@ -16,7 +16,7 @@ Module Community và Events cung cấp các chức năng phục vụ việc chia
 | Quản trị hệ thống (SYSTEM_ADMIN) | Kiểm duyệt nội dung trên toàn hệ thống (FR-ADM-02) và xóa nội dung vi phạm |
 | Hệ thống | Tạo thông báo và xử lý nhắc nhở sự kiện theo cấu hình đã được nhóm chốt |
 
-> **Phân biệt với hàng "Kiểm duyệt nội dung" ở `srs.md` Phụ lục A:** kiểm duyệt là chức năng quản trị toàn hệ thống (FR-ADM-02, module admin), chỉ `SYSTEM_ADMIN` thực hiện. Việc `BRANCH_ADMIN` gỡ nội dung trong tài liệu này là quản lý nội dung của chính chi mình quản lý (kèm các chi con, theo BR-GEN-14), không mở rộng ra chi khác hay gia đình khác, và không bao gồm các công cụ kiểm duyệt của module admin.
+> **Theo `srs.md` Phụ lục A:** `BRANCH_ADMIN` được gỡ bài đăng, bình luận, sự kiện của người khác trong chi mình quản lý (kèm các chi con, theo BR-GEN-14); kiểm duyệt nội dung toàn hệ thống (FR-ADM-02, module admin) chỉ `SYSTEM_ADMIN` thực hiện.
 
 ### Quy tắc truy cập
 

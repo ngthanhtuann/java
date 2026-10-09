@@ -292,7 +292,8 @@ Cột trống được điền dần trong các sprint sau; mỗi hàng nối y�
 | Xem dashboard thống kê | Không | Không | Không | Có (gia đình/chi của mình) | Có |
 | Tạo báo cáo PDF, xuất CSV | Không | Không | Không | Có | Có |
 | Quản lý người dùng (khóa, đổi vai trò) | Không | Không | Không | Không | Có |
-| Kiểm duyệt nội dung | Không | Không | Không | Không | Có |
+| Gỡ bài đăng, bình luận, sự kiện của người khác | Không | Không | Không | Có (chi mình quản lý, kèm chi con) | Có |
+| Kiểm duyệt nội dung (toàn hệ thống, FR-ADM-02) | Không | Không | Không | Không | Có |
 | Xem nhật ký kiểm toán | Không | Không | Không | Không | Có |
 | Sao lưu, khôi phục dữ liệu | Không | Không | Không | Không | Có |
 | Cấu hình hệ thống | Không | Không | Không | Không | Có |
