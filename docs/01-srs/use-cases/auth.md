@@ -6,6 +6,8 @@
 
 ## 1. Phạm vi và Actor
 > Module này làm gì, ai dùng. Bổ sung thêm **ma trận phân quyền** (role x chức năng) ở mục 4 và **luồng JWT** (access token, refresh token, nơi FE lưu token).
+>
+> Ghi chú phạm vi: FR-AUTH-02 (Phân quyền theo vai trò, RBAC) thuộc tài liệu này; đặc tả bổ sung ở Sprint 2.
 
 ## 2. Danh sách use case
 > Dưới đây là gợi ý ban đầu. Chỉnh, thêm, bớt cho đúng; gắn **mã FR** lấy từ `srs.md` sau khi Tuấn gửi bảng FR.
@@ -60,11 +62,11 @@
 | BR-01 | |
 
 ## 5. Thiết kế bảng cơ sở dữ liệu của module
-> Gợi ý tên bảng ở dưới. Với mỗi bảng, điền cột, kiểu dữ liệu, khóa, ràng buộc. **Gửi cho TV2 (Trí) gộp vào ERD tổng muộn nhất đầu tuần 2.** Quy ước: tên bảng `snake_case` số ít, có `created_at`, `updated_at`, `deleted_at` (xóa mềm).
+> Gợi ý tên bảng ở dưới. Với mỗi bảng, điền cột, kiểu dữ liệu, khóa, ràng buộc. **Gửi cho TV2 (Trí) gộp vào ERD tổng muộn nhất đầu tuần 2.** Quy ước: tên bảng `snake_case` số ít (ngoại lệ duy nhất là `users`, vì `user` là từ khóa PostgreSQL), có `created_at`, `updated_at`, `deleted_at` (xóa mềm, kiểu `TIMESTAMPTZ`). Khóa ngoại chỉ dùng trong cùng module; tham chiếu sang bảng của module khác chỉ lưu UUID có index, kiểm tra ở service (`architecture.md` mục 7, quyết định 9).
 
 | Bảng | Mục đích | Trạng thái |
 |---|---|---|
-| `user` | Tài khoản người dùng (mật khẩu BCrypt) | |
+| `users` | Tài khoản người dùng (mật khẩu BCrypt) | |
 | `role` | Vai trò: GUEST, MEMBER, BRANCH_ADMIN, SYSTEM_ADMIN | |
 | `user_role` | Gán vai trò cho người dùng | |
 | `refresh_token` | Refresh token | |
@@ -78,9 +80,9 @@ Mẫu mô tả một bảng:
 | Cột | Kiểu | Khóa / Ràng buộc | Mô tả |
 |---|---|---|---|
 | id | UUID | PK | |
-| created_at | TIMESTAMP | NOT NULL | |
-| updated_at | TIMESTAMP | NOT NULL | |
-| deleted_at | TIMESTAMP | NULL | xóa mềm |
+| created_at | TIMESTAMPTZ | NOT NULL | |
+| updated_at | TIMESTAMPTZ | NOT NULL | |
+| deleted_at | TIMESTAMPTZ | NULL | xóa mềm |
 
 ## 6. API của module
 > Chi tiết viết trong `../../04-api/openapi/auth.yaml`. Tóm tắt endpoint ở đây.

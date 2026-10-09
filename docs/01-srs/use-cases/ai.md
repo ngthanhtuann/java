@@ -53,13 +53,13 @@
 | BR-01 | |
 
 ## 5. Thiết kế bảng cơ sở dữ liệu của module
-> Gợi ý tên bảng ở dưới. Với mỗi bảng, điền cột, kiểu dữ liệu, khóa, ràng buộc. **Gửi cho TV2 (Trí) gộp vào ERD tổng muộn nhất đầu tuần 2.** Quy ước: tên bảng `snake_case` số ít, có `created_at`, `updated_at`, `deleted_at` (xóa mềm).
+> Gợi ý tên bảng ở dưới. Với mỗi bảng, điền cột, kiểu dữ liệu, khóa, ràng buộc. **Gửi cho TV2 (Trí) gộp vào ERD tổng muộn nhất đầu tuần 2.** Quy ước: tên bảng `snake_case` số ít, bảng của module AI có tiền tố `ai_` (`architecture.md` mục 7, quyết định 1), có `created_at`, `updated_at`, `deleted_at` (xóa mềm, kiểu `TIMESTAMPTZ`). Khóa ngoại chỉ dùng trong cùng module; tham chiếu sang bảng của module khác chỉ lưu UUID có index, kiểm tra ở service (quyết định 9).
 
 | Bảng | Mục đích | Trạng thái |
 |---|---|---|
-| `embedding_chunk` | Đoạn văn bản + vector (pgvector) + family_id để lọc quyền | |
-| `chat_session` | Phiên trò chuyện | |
-| `chat_message` | Tin nhắn | |
+| `ai_embedding_chunk` | Đoạn văn bản + vector (pgvector) + family_id để lọc quyền | |
+| `ai_chat_session` | Phiên trò chuyện | |
+| `ai_chat_message` | Tin nhắn | |
 | `ai_summary_cache` | Cache kết quả tóm tắt | |
 
 Mẫu mô tả một bảng:
@@ -68,9 +68,9 @@ Mẫu mô tả một bảng:
 | Cột | Kiểu | Khóa / Ràng buộc | Mô tả |
 |---|---|---|---|
 | id | UUID | PK | |
-| created_at | TIMESTAMP | NOT NULL | |
-| updated_at | TIMESTAMP | NOT NULL | |
-| deleted_at | TIMESTAMP | NULL | xóa mềm |
+| created_at | TIMESTAMPTZ | NOT NULL | |
+| updated_at | TIMESTAMPTZ | NOT NULL | |
+| deleted_at | TIMESTAMPTZ | NULL | xóa mềm |
 
 ## 6. API của module
 > Chi tiết viết trong `../../04-api/openapi/ai.yaml`. Tóm tắt endpoint ở đây.
