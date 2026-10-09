@@ -1,151 +1,341 @@
 # Quy ước API chung
 
-> **Người viết:** TV3 (PiLo257) | **Reviewer:** TV1 (Tuấn Nguyễn Thanh)
-> **Task Jira:** SCRUM-21 | **Trạng thái:** Nháp
+> **Người viết:** TV3 (PiLo257)
+> **Reviewer:** TV1 (Tuấn Nguyễn Thanh)
+> **Task Jira:** SCRUM-21
+> **Trạng thái:** Chờ review
 
-Tài liệu này là quy ước chung cho các API của FamilyConnect. Các file OpenAPI của các module phải tuân theo các quy ước dưới đây.
+Tài liệu này quy định chuẩn API chung của FamilyConnect cho web và mobile. Tất cả module phải tuân theo tài liệu này khi thiết kế OpenAPI và triển khai backend.
+
+Tham chiếu:
+
+* `docs/02-design/architecture.md`, mục 7.
+* `docs/01-srs/privacy.md`.
 
 ## 1. URL và HTTP Method
 
-### 1.1. URL
+### 1.1. Quy ước URL
 
-- API sử dụng tiền tố `/api/v1/...`.
-- Tên tài nguyên dùng dạng số nhiều, chữ thường.
+* API sử dụng tiền tố `/api/v1/`.
+* Tên tài nguyên dùng danh từ số nhiều, chữ thường.
+* Tài nguyên có nhiều từ sử dụng `kebab-case`.
+* Không dùng động từ trong URL, ngoại trừ các endpoint đã thống nhất: `/auth/login`, `/auth/refresh`, `/ai/chat`.
+* Tài nguyên lồng nhau tối đa 2 cấp.
+* Tham số đường dẫn dùng `camelCase`, ví dụ `{familyId}`, `{postId}`.
+* ID và khóa ngoại trong API sử dụng UUID dạng chuỗi.
 
 Ví dụ:
 
 ```text
 /api/v1/families
-/api/v1/events
+/api/v1/families/{familyId}
 /api/v1/posts
+/api/v1/events/{eventId}/participants
+/api/v1/auth/login
+/api/v1/auth/refresh
+/api/v1/ai/chat
 ```
 
 ### 1.2. HTTP Method
 
-| Method | Mục đích |
-|---|---|
-| GET | Đọc dữ liệu |
-| POST | Tạo dữ liệu mới |
-| PUT | Cập nhật toàn bộ |
-| PATCH | Cập nhật một phần |
-| DELETE | Xóa dữ liệu |
-## 2. Cấu trúc Response
+| Method | Mục đích                                          |
+| ------ | ------------------------------------------------- |
+| GET    | Đọc dữ liệu                                       |
+| POST   | Tạo dữ liệu mới                                   |
+| PUT    | Cập nhật toàn bộ hoặc thực hiện thao tác thay thế |
+| PATCH  | Cập nhật một phần                                 |
+| DELETE | Xóa tài nguyên theo quy tắc của module            |
 
-### 2.1. Thành công
+### 1.3. HTTP Status khi thành công
+
+| HTTP Status | Trường hợp                                 |
+| ----------- | ------------------------------------------ |
+| 200 OK      | Đọc dữ liệu, cập nhật dữ liệu, xóa dữ liệu |
+| 201 Created | Tạo dữ liệu mới                            |
+
+Không sử dụng `204 No Content` cho API xóa. API xóa phải trả về `200` cùng response envelope thống nhất:
 
 ```json
 {
   "success": true,
-  "data": {},
-  "meta": {
-    "page": 0,
-    "size": 20,
-    "total": 100
+  "data": null
+}
+```
+
+## 2. Cấu trúc Response
+
+### 2.1. Response thành công
+
+Response thành công sử dụng cấu trúc thống nhất.
+
+Đối với API trả về một đối tượng:
+
+```json
+{
+  "success": true,
+  "data": {
+    "id": "550e8400-e29b-41d4-a716-446655440000",
+    "title": "Họp mặt gia đình",
+    "createdAt": "2026-10-09T10:00:00+07:00",
+    "updatedAt": "2026-10-09T10:00:00+07:00"
   }
 }
 ```
 
-- `success`: trạng thái request.
-- `data`: dữ liệu trả về.
-- `meta`: thông tin bổ sung, dùng cho phân trang.
-### 2.2. Lỗi
+Đối với API trả về danh sách:
+
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": "550e8400-e29b-41d4-a716-446655440000",
+      "title": "Họp mặt gia đình",
+      "createdAt": "2026-10-09T10:00:00+07:00",
+      "updatedAt": "2026-10-09T10:00:00+07:00"
+    }
+  ],
+  "meta": {
+    "page": 0,
+    "size": 20,
+    "total": 1
+  }
+}
+```
+
+Quy tắc:
+
+* `success`: trạng thái xử lý request.
+* `data`: dữ liệu trả về; là mảng đối với API danh sách.
+* `meta`: chỉ có ở API trả về danh sách.
+* API trả về một đối tượng không có `meta`.
+* `meta.total` là tổng số bản ghi phù hợp với điều kiện truy vấn.
+* Khi xóa thành công, `data` có giá trị `null`.
+
+### 2.2. Response lỗi
+
+Mọi lỗi phải tuân theo một định dạng duy nhất:
 
 ```json
 {
   "success": false,
   "error": {
-    "code": "AUTH_001",
-    "message": "Sai email hoặc mật khẩu",
-    "details": []
+    "code": "VALID_001",
+    "message": "Dữ liệu không hợp lệ",
+    "details": [
+      {
+        "field": "title",
+        "message": "Trường này không được để trống"
+      }
+    ]
   }
 }
 ```
 
-Đây là cấu trúc lỗi thống nhất cho web/mobile.
+Quy tắc:
+
+* `success` luôn là `false`.
+* `error.code` là mã lỗi theo quy ước chung hoặc mã riêng của module.
+* `error.message` là thông báo dễ hiểu.
+* `error.details` là mảng các lỗi chi tiết; mỗi phần tử có `field` và `message`. Khi không có lỗi chi tiết, dùng mảng rỗng `[]`.
+* `VALID_001` sử dụng `details` để mô tả lỗi theo từng trường khi phù hợp.
+
+Định dạng lỗi trên là **chuẩn duy nhất cho cả web và mobile**. Backend có thể sử dụng `ProblemDetail` của Spring bên trong, nhưng response trả ra phải đúng JSON `{success:false,error:{code,message,details}}`. Tất cả lỗi, bao gồm lỗi hệ thống HTTP 500 và lỗi bảo mật HTTP 401, 403, đều phải theo định dạng này.
 
 ## 3. Mã lỗi
 
-| Mã | HTTP | Ý nghĩa |
-|---|---:|---|
-| AUTH_001 | 401 | Sai email hoặc mật khẩu |
-| AUTH_002 | 401 | Token hết hạn hoặc không hợp lệ |
-| PERM_001 | 403 | Không đủ quyền |
-| PERM_002 | 403 | Thành viên chưa được xác minh |
-| VALID_001 | 400 | Dữ liệu không hợp lệ |
-| NOT_FOUND_001 | 404 | Không tìm thấy tài nguyên |
-| RATE_001 | 429 | Vượt quá giới hạn request |
+Các API phải trả đúng HTTP status tương ứng với mã lỗi.
 
-API phải sử dụng đúng HTTP status tương ứng với lỗi.
-## 4. Phân trang
+| Mã lỗi          | HTTP | Ý nghĩa                                      |
+| --------------- | ---: | -------------------------------------------- |
+| `AUTH_001`      |  401 | Sai email hoặc mật khẩu                      |
+| `AUTH_002`      |  401 | Token hết hạn hoặc không hợp lệ              |
+| `AUTH_003`      |  403 | Tài khoản bị khóa hoặc chưa kích hoạt        |
+| `PERM_001`      |  403 | Không đủ quyền truy cập                      |
+| `PERM_002`      |  403 | Thành viên chưa được xác minh                |
+| `VALID_001`     |  400 | Dữ liệu không hợp lệ                         |
+| `NOT_FOUND_001` |  404 | Không tìm thấy tài nguyên                    |
+| `CONFLICT_001`  |  409 | Xung đột dữ liệu khi module chưa có mã riêng |
+| `FILE_001`      |  413 | Tệp vượt kích thước cho phép                 |
+| `FILE_002`      |  415 | Định dạng tệp không được hỗ trợ              |
+| `RATE_001`      |  429 | Vượt quá giới hạn request                    |
+| `SERVER_001`    |  500 | Lỗi hệ thống                                 |
+| `AI_001`        |  503 | Dịch vụ AI tạm thời không khả dụng           |
 
-API trả về danh sách sử dụng:
+Quy tắc quyền truy cập:
+
+* Thành viên chưa được xác minh nhận `403 PERM_002` khi gọi chức năng yêu cầu xác minh.
+* Người dùng truy cập dữ liệu thuộc gia đình khác nhận `403 PERM_001`.
+* Lỗi xác thực, phân quyền và lỗi hệ thống phải sử dụng đúng response envelope tại mục 2.2.
+
+### 3.1. Mã lỗi riêng của module
+
+Các module có thể định nghĩa mã lỗi nghiệp vụ riêng theo dạng:
+
+`<MODULE>_<số 3 chữ số>`
+
+Tiền tố module đã thống nhất:
+
+| Module         | Tiền tố |
+| -------------- | ------- |
+| Gia phả        | `GEN_`  |
+| Community      | `COM_`  |
+| Events         | `EVT_`  |
+| Heritage       | `HER_`  |
+| Directory      | `DIR_`  |
+| Dashboard      | `DSH_`  |
+| Administration | `ADM_`  |
+
+Mã lỗi riêng dùng cho các trường hợp vi phạm quy tắc nghiệp vụ và trả về HTTP `409 Conflict`, trừ khi tài liệu đã thống nhất quy định cụ thể khác.
+
+Danh sách mã lỗi phải được ghi trong tài liệu use case và file OpenAPI tương ứng. Không tự ý tạo mã trùng hoặc thay đổi mã đã thống nhất.
+
+## 4. Phân trang và sắp xếp
+
+API trả về danh sách sử dụng các tham số:
+
 ```text
-?page=0&size=20&sort=created_at,desc
+?page=0&size=20&sort=createdAt,desc
 ```
-- `page`: số trang, bắt đầu từ 0.
-- `size`: số lượng bản ghi.
-- `sort`: trường và chiều sắp xếp (`asc` hoặc `desc`).
 
-Thông tin phân trang nằm trong meta.
+Quy tắc:
+
+* `page`: số trang, bắt đầu từ `0`; mặc định là `0`.
+* `size`: số bản ghi mỗi trang; mặc định là `20`, tối đa `100`.
+* `sort`: tên trường theo `camelCase` và chiều sắp xếp `asc` hoặc `desc`.
+* `sort` dùng tên thuộc tính API/entity theo `camelCase`, không dùng tên cột DB dạng `snake_case`.
+* `meta.total` là tổng số bản ghi phù hợp với truy vấn.
+* Nếu `size` vượt quá `100`, trả về HTTP `400` với mã `VALID_001`.
+* Response của API danh sách phải có `data` là mảng và có `meta`.
+
+Ví dụ hợp lệ:
+
+```text
+/api/v1/posts?page=0&size=20&sort=createdAt,desc
+```
 
 ## 5. Định dạng dữ liệu
 
-- Ngày giờ sử dụng ISO-8601.
-- JSON sử dụng camelCase.
-- Encoding sử dụng UTF-8.
+### 5.1. Tên trường và kiểu dữ liệu
+
+* JSON sử dụng `camelCase`.
+* ID và khóa ngoại trong API sử dụng UUID dạng chuỗi.
+* Trường thời gian sử dụng `createdAt`, `updatedAt`, tương ứng với cột DB `created_at`, `updated_at`.
+* Mọi response của thực thể phải có `createdAt` và `updatedAt`.
+* Trường không có giá trị trả về `null`, không tự ý bỏ trường khỏi response.
+* Enum sử dụng `UPPER_SNAKE_CASE`.
+* Encoding sử dụng UTF-8.
 
 Ví dụ:
 
 ```json
 {
-  "createdAt": "2026-10-09T23:30:00+07:00",
-  "updatedAt": "2026-10-09T23:30:00+07:00"
+  "id": "550e8400-e29b-41d4-a716-446655440000",
+  "createdAt": "2026-10-09T10:00:00+07:00",
+  "updatedAt": "2026-10-09T10:30:00+07:00",
+  "deletedAt": null
+}
+```
+
+### 5.2. Ngày và giờ
+
+* Thời điểm có giờ sử dụng ISO-8601 kèm múi giờ.
+* Ngày thuần, ví dụ ngày sinh, sử dụng định dạng `YYYY-MM-DD`.
+
+Ví dụ:
+
+```json
+{
+  "dateOfBirth": "2006-11-10",
+  "startAt": "2026-10-09T10:00:00+07:00"
 }
 ```
 
 ## 6. Authentication và Authorization
 
-API yêu cầu đăng nhập sử dụng:
+### 6.1. Xác thực
+
+Các endpoint yêu cầu đăng nhập sử dụng header:
 
 ```text
 Authorization: Bearer <access_token>
 ```
 
-Backend phải kiểm tra quyền của người dùng và trạng thái xác minh thành viên khi chức năng yêu cầu.
+* Access token có thời hạn ngắn.
+* Khi access token hết hạn hoặc không hợp lệ, trả về `401 AUTH_002`.
+* Client sử dụng refresh token để gọi `POST /api/v1/auth/refresh` nhằm lấy access token mới.
+* Endpoint công khai phải được khai báo rõ `security: []` trong OpenAPI.
+* Backend phải kiểm tra quyền và trạng thái xác minh thành viên trước khi cho phép truy cập dữ liệu.
 
-```json
-{
-  "success": false,
-  "error": {
-    "code": "PERM_001",
-    "message": "Không đủ quyền",
-    "details": []
-  }
-}
-```
+### 6.2. Phân quyền và dữ liệu gia đình
+
+* Chỉ thành viên đã được xác minh mới được truy cập chức năng yêu cầu xác minh.
+* Chỉ người dùng có quyền mới được đọc hoặc thay đổi dữ liệu.
+* Dữ liệu gia đình chỉ được truy cập bởi người dùng thuộc phạm vi gia đình được phép.
+* Không trả dữ liệu riêng tư của gia đình khác khi người dùng không có quyền.
+* Trả `403 PERM_002` khi thành viên chưa được xác minh; trả `403 PERM_001` khi không đủ quyền, bao gồm truy cập dữ liệu gia đình khác.
 
 ## 7. Bảo mật
 
-- Cấu hình CORS phù hợp với môi trường.
-- Giới hạn kích thước request.
-- Áp dụng rate limit cho API đăng nhập và chat.
-- Request vượt giới hạn trả về HTTP 429 và `RATE_001`.
+### 7.1. Giới hạn request
+
+| Quy định                   | Giới hạn                    |
+| -------------------------- | --------------------------- |
+| Đăng nhập                  | 5 lần/phút theo IP và email |
+| Chat AI                    | 20 câu/giờ/người dùng       |
+| Kích thước JSON request    | Tối đa 1 MB                 |
+| Kích thước request tải tệp | Tối đa 10 MB/request        |
+
+Khi vượt giới hạn request, trả HTTP `429` với mã `RATE_001` và header `Retry-After` để client biết thời gian chờ trước khi thử lại.
+
+### 7.2. CORS và log
+
+* Danh sách origin được phép truy cập CORS phải lấy từ biến môi trường.
+* Không ghi mật khẩu, access token, refresh token hoặc nội dung chat AI vào log.
+* Không đưa thông tin bí mật vào response lỗi.
+* Không hard-code mật khẩu, token hoặc secret trong mã nguồn.
+* Backend phải kiểm tra quyền truy cập trước khi trả dữ liệu hoặc tệp.
+
+### 7.3. Quy ước tải tệp
+
+* Request tải tệp sử dụng `multipart/form-data`, tên trường là `file`.
+* Định dạng ảnh được hỗ trợ: `jpg`, `png`, `webp`.
+* Mỗi tệp ảnh tối đa 5 MB.
+* Tên tệp lưu trữ được tạo bằng UUID, không sử dụng trực tiếp tên tệp do người dùng cung cấp làm tên lưu trữ.
+* Tệp chỉ được truy cập qua endpoint có kiểm tra quyền, không công khai chỉ bằng URL tệp.
+* Tệp vượt giới hạn trả HTTP `413 FILE_001`.
+* Định dạng tệp không được hỗ trợ trả HTTP `415 FILE_002`.
+* Tổng kích thước request tải tệp không vượt quá giới hạn 10 MB/request.
+
 ## 8. Quy ước OpenAPI
 
 Các file OpenAPI đặt tại:
 
-```text
-docs/04-api/openapi/
-```
-Mỗi endpoint cần mô tả:
+`docs/04-api/openapi/`
 
-- Method và URL.
-- Request parameters/body.
-- Response thành công.
-- Response lỗi.
-- HTTP status.
-- Authentication/quyền truy cập nếu có.
+OpenAPI là nguồn chuẩn để định nghĩa DTO của web và mobile. DTO được sinh tự động từ các file OpenAPI bằng công cụ `openapi-typescript`, không viết tay riêng ở hai nơi. Vì vậy, OpenAPI của mỗi module phải đầy đủ và khớp với dữ liệu thực tế của API.
 
-DTO web/mobile được định nghĩa theo schema trong OpenAPI và sử dụng camelCase.
+Checklist bắt buộc cho mỗi module:
 
-Các module phải tuân theo tài liệu này khi xây dựng API mới.
+* Mỗi endpoint có request mẫu và response mẫu thành công, response lỗi, mã HTTP và quyền truy cập.
+* Dùng đúng schema chung `SuccessResponse`, `ErrorResponse`.
+* API danh sách dùng tham số `page`, `size`, `sort`; `data` là mảng và có `meta`.
+* API trả về một đối tượng không có `meta`.
+* Khai báo `bearerAuth` cho endpoint cần đăng nhập; endpoint công khai khai báo `security: []`.
+* Khai báo các response lỗi phù hợp: `400`, `401`, `403`, `404`, `409`, `413`, `415`, `429`, `500`, `503` khi endpoint có liên quan.
+* Phân biệt `PERM_001` và `PERM_002`.
+* Mỗi `operationId` phải duy nhất trên toàn hệ thống.
+* ID và khóa ngoại là UUID dạng chuỗi.
+* Enum sử dụng `UPPER_SNAKE_CASE`.
+* Response của thực thể có `createdAt`, `updatedAt`.
+* Mã lỗi riêng của module được khai báo trong OpenAPI và tài liệu use case.
+* Response lỗi luôn tuân theo định dạng tại mục 2.2.
+* API xóa trả HTTP `200` với `{ "success": true, "data": null }`, không dùng `204`.
+
+Các module phải tuân theo quy ước này khi xây dựng API mới hoặc cập nhật API hiện có. Khi có thay đổi quy ước chung, nhóm cần thống nhất và cập nhật tài liệu trước khi áp dụng cho các module.
+
+## 9. Trạng thái review
+
+* [ ] Cả nhóm đã đọc và đồng ý với quy ước.
+* [ ] Reviewer đã kiểm tra và approve PR.
+* [ ] Các OpenAPI của module tuân theo quy ước chung.
