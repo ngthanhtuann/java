@@ -1,10 +1,10 @@
 # Người viết: TV2 (Nguyễn Minh Trí). Task SCRUM-18. Theo quy ước ../conventions.md (SCRUM-21)
 # Response thành công: { success: true, data, meta? }   Lỗi: { success: false, error: { code, message, details } }
-# Mã lỗi riêng GEN_001..GEN_013 (HTTP 409) giải thích ở docs/02-design/genealogy.md mục 7.2, theo quy tắc mã lỗi riêng ở conventions.md mục 3.2
+# Mã lỗi riêng GEN_001..GEN_013 (HTTP 409) giải thích ở docs/01-srs/use-cases/genealogy.md mục 7.2, theo quy tắc mã lỗi riêng ở conventions.md mục 3.2
 openapi: 3.0.3
 info:
   title: FamilyConnect - Gia phả
-  version: 0.3.0
+  version: 0.4.0
   description: |
     Module genealogy. Mọi API yêu cầu đăng nhập (Bearer JWT) và lọc theo family_id của người dùng (chống IDOR).
     Người chưa xác minh gọi API dữ liệu gia đình nhận 403 PERM_002. Gia đình khác nhận 403 PERM_001.
@@ -25,6 +25,7 @@ tags:
 paths:
   /families:
     get:
+      operationId: listMyFamilies
       tags: [families]
       summary: Gia đình của tôi (UC-GEN-01)
       description: Trả danh sách gia đình mà người dùng thuộc về (tối đa 1 theo BR-GEN-15, vẫn trả dạng danh sách).
@@ -45,6 +46,7 @@ paths:
                 meta: { page: 0, size: 20, total: 1 }
         '401': { $ref: '#/components/responses/Unauthorized' }
     post:
+      operationId: createFamily
       tags: [families]
       summary: Tạo gia đình (UC-GEN-01)
       description: Người tạo trở thành chủ gia đình (BRANCH_ADMIN). Chỉ người chưa thuộc gia đình nào (BR-GEN-15).
@@ -76,6 +78,7 @@ paths:
     parameters:
       - $ref: '#/components/parameters/familyId'
     get:
+      operationId: getFamily
       tags: [families]
       summary: Xem gia đình (UC-GEN-01)
       responses:
@@ -91,6 +94,7 @@ paths:
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
     put:
+      operationId: updateFamily
       tags: [families]
       summary: Sửa gia đình (UC-GEN-01)
       description: Quyền BRANCH_ADMIN, SYSTEM_ADMIN.
@@ -114,6 +118,7 @@ paths:
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
     delete:
+      operationId: deleteFamily
       tags: [families]
       summary: Xóa mềm gia đình (UC-GEN-01)
       description: Chỉ SYSTEM_ADMIN. Còn thành viên thì GEN_001.
@@ -138,6 +143,7 @@ paths:
     parameters:
       - $ref: '#/components/parameters/familyId'
     get:
+      operationId: listBranches
       tags: [branches]
       summary: Danh sách chi họ (UC-GEN-02)
       parameters:
@@ -159,6 +165,7 @@ paths:
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
     post:
+      operationId: createBranch
       tags: [branches]
       summary: Tạo chi họ (UC-GEN-02)
       requestBody:
@@ -191,6 +198,7 @@ paths:
     parameters:
       - $ref: '#/components/parameters/branchId'
     put:
+      operationId: updateBranch
       tags: [branches]
       summary: Sửa chi họ (UC-GEN-02)
       requestBody:
@@ -219,6 +227,7 @@ paths:
               schema: { $ref: '#/components/schemas/ErrorResponse' }
               example: { success: false, error: { code: GEN_003, message: Chi cha tạo vòng lặp, details: [] } }
     delete:
+      operationId: deleteBranch
       tags: [branches]
       summary: Xóa mềm chi họ (UC-GEN-02)
       responses:
@@ -242,6 +251,7 @@ paths:
     parameters:
       - $ref: '#/components/parameters/familyId'
     get:
+      operationId: listPersons
       tags: [persons]
       summary: Danh sách thành viên (UC-GEN-03)
       description: Trường nhạy cảm được ẩn theo vai trò và tuổi (BR-GEN-10). Trường bị ẩn trả null.
@@ -260,12 +270,13 @@ paths:
               example:
                 success: true
                 data:
-                  - { id: 5a6b7c8d-9e0f-4a1b-8c2d-3e4f5a6b7c8d, familyId: 3f2a8c1e-0b7d-4e55-9a31-5d2c6b8e1a01, branchId: 7c4d1e22-8a90-4b3f-a5c6-1d2e3f405162, fullName: Nguyễn Văn An, gender: MALE, birthYear: 1970, birthDate: null, birthplace: Nghệ An, currentProvince: Hà Nội, currentAddress: null, isDeceased: false, deathDate: null, burialPlace: null, avatarUrl: null, note: null, createdAt: '2026-10-01T08:20:00Z', updatedAt: '2026-10-01T08:20:00Z' }
+                  - { id: 5a6b7c8d-9e0f-4a1b-8c2d-3e4f5a6b7c8d, familyId: 3f2a8c1e-0b7d-4e55-9a31-5d2c6b8e1a01, branchId: 7c4d1e22-8a90-4b3f-a5c6-1d2e3f405162, fullName: Nguyễn Văn An, gender: MALE, birthYear: 1970, birthDate: null, birthplace: Nghệ An, currentProvince: Hà Nội, currentAddress: null, isDeceased: false, deathDate: null, burialPlace: null, avatarMediaId: null, note: null, createdAt: '2026-10-01T08:20:00Z', updatedAt: '2026-10-01T08:20:00Z' }
                 meta: { page: 0, size: 20, total: 1 }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
     post:
+      operationId: createPerson
       tags: [persons]
       summary: Thêm thành viên (UC-GEN-03)
       requestBody:
@@ -282,7 +293,7 @@ paths:
               schema: { $ref: '#/components/schemas/PersonResponse' }
               example:
                 success: true
-                data: { id: 5a6b7c8d-9e0f-4a1b-8c2d-3e4f5a6b7c8d, familyId: 3f2a8c1e-0b7d-4e55-9a31-5d2c6b8e1a01, branchId: 7c4d1e22-8a90-4b3f-a5c6-1d2e3f405162, fullName: Nguyễn Văn An, gender: MALE, birthYear: 1970, birthDate: '1970-05-12', birthplace: Nghệ An, currentProvince: Hà Nội, currentAddress: 12 Phố Huế, isDeceased: false, deathDate: null, burialPlace: null, avatarUrl: null, note: null, createdAt: '2026-10-01T08:20:00Z', updatedAt: '2026-10-01T08:20:00Z' }
+                data: { id: 5a6b7c8d-9e0f-4a1b-8c2d-3e4f5a6b7c8d, familyId: 3f2a8c1e-0b7d-4e55-9a31-5d2c6b8e1a01, branchId: 7c4d1e22-8a90-4b3f-a5c6-1d2e3f405162, fullName: Nguyễn Văn An, gender: MALE, birthYear: 1970, birthDate: '1970-05-12', birthplace: Nghệ An, currentProvince: Hà Nội, currentAddress: 12 Phố Huế, isDeceased: false, deathDate: null, burialPlace: null, avatarMediaId: null, note: null, createdAt: '2026-10-01T08:20:00Z', updatedAt: '2026-10-01T08:20:00Z' }
         '400': { $ref: '#/components/responses/ValidationError' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
@@ -298,6 +309,7 @@ paths:
     parameters:
       - $ref: '#/components/parameters/personId'
     get:
+      operationId: getPerson
       tags: [persons]
       summary: Xem hồ sơ thành viên (UC-GEN-03)
       description: Trẻ em dưới 16 tuổi với MEMBER chỉ có tên, năm sinh (các trường khác null).
@@ -309,11 +321,12 @@ paths:
               schema: { $ref: '#/components/schemas/PersonResponse' }
               example:
                 success: true
-                data: { id: 5a6b7c8d-9e0f-4a1b-8c2d-3e4f5a6b7c8d, familyId: 3f2a8c1e-0b7d-4e55-9a31-5d2c6b8e1a01, branchId: 7c4d1e22-8a90-4b3f-a5c6-1d2e3f405162, fullName: Nguyễn Văn An, gender: MALE, birthYear: 1970, birthDate: null, birthplace: Nghệ An, currentProvince: Hà Nội, currentAddress: null, isDeceased: false, deathDate: null, burialPlace: null, avatarUrl: null, note: null, createdAt: '2026-10-01T08:20:00Z', updatedAt: '2026-10-01T08:20:00Z' }
+                data: { id: 5a6b7c8d-9e0f-4a1b-8c2d-3e4f5a6b7c8d, familyId: 3f2a8c1e-0b7d-4e55-9a31-5d2c6b8e1a01, branchId: 7c4d1e22-8a90-4b3f-a5c6-1d2e3f405162, fullName: Nguyễn Văn An, gender: MALE, birthYear: 1970, birthDate: null, birthplace: Nghệ An, currentProvince: Hà Nội, currentAddress: null, isDeceased: false, deathDate: null, burialPlace: null, avatarMediaId: null, note: null, createdAt: '2026-10-01T08:20:00Z', updatedAt: '2026-10-01T08:20:00Z' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
     put:
+      operationId: updatePerson
       tags: [persons]
       summary: Sửa thành viên (UC-GEN-03)
       description: Đánh dấu đã mất thì hôn nhân MARRIED của người đó tự chuyển WIDOWED (BR-GEN-08).
@@ -331,7 +344,7 @@ paths:
               schema: { $ref: '#/components/schemas/PersonResponse' }
               example:
                 success: true
-                data: { id: 5a6b7c8d-9e0f-4a1b-8c2d-3e4f5a6b7c8d, familyId: 3f2a8c1e-0b7d-4e55-9a31-5d2c6b8e1a01, branchId: null, fullName: Nguyễn Văn An, gender: MALE, birthYear: 1950, birthDate: '1950-05-12', birthplace: null, currentProvince: null, currentAddress: null, isDeceased: true, deathDate: '2020-03-01', burialPlace: Nghĩa trang quê nhà, avatarUrl: null, note: null, createdAt: '2026-10-01T08:20:00Z', updatedAt: '2026-10-02T11:00:00Z' }
+                data: { id: 5a6b7c8d-9e0f-4a1b-8c2d-3e4f5a6b7c8d, familyId: 3f2a8c1e-0b7d-4e55-9a31-5d2c6b8e1a01, branchId: null, fullName: Nguyễn Văn An, gender: MALE, birthYear: 1950, birthDate: '1950-05-12', birthplace: null, currentProvince: null, currentAddress: null, isDeceased: true, deathDate: '2020-03-01', burialPlace: Nghĩa trang quê nhà, avatarMediaId: null, note: null, createdAt: '2026-10-01T08:20:00Z', updatedAt: '2026-10-02T11:00:00Z' }
         '400': { $ref: '#/components/responses/ValidationError' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
@@ -343,6 +356,7 @@ paths:
               schema: { $ref: '#/components/schemas/ErrorResponse' }
               example: { success: false, error: { code: GEN_012, message: Người dưới 16 tuổi không có tài khoản đăng nhập riêng, details: [] } }
     delete:
+      operationId: deletePerson
       tags: [persons]
       summary: Xóa mềm thành viên (UC-GEN-03)
       responses:
@@ -366,6 +380,7 @@ paths:
     parameters:
       - $ref: '#/components/parameters/personId'
     post:
+      operationId: addParent
       tags: [parent-child]
       summary: Thêm cha/mẹ cho thành viên (UC-GEN-04)
       description: personId là người con. Kiểm tra BR-GEN-02 đến 05.
@@ -404,6 +419,7 @@ paths:
       - $ref: '#/components/parameters/personId'
       - { name: parentId, in: path, required: true, description: Id người cha/mẹ, schema: { type: string, format: uuid } }
     delete:
+      operationId: removeParent
       tags: [parent-child]
       summary: Gỡ quan hệ cha-mẹ-con (UC-GEN-04)
       responses:
@@ -419,6 +435,7 @@ paths:
 
   /marriages:
     post:
+      operationId: createMarriage
       tags: [marriages]
       summary: Thêm hôn nhân (UC-GEN-05)
       requestBody:
@@ -454,6 +471,7 @@ paths:
     parameters:
       - $ref: '#/components/parameters/marriageId'
     put:
+      operationId: updateMarriage
       tags: [marriages]
       summary: Đổi trạng thái hôn nhân (UC-GEN-05)
       requestBody:
@@ -476,6 +494,7 @@ paths:
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
     delete:
+      operationId: deleteMarriage
       tags: [marriages]
       summary: Xóa hôn nhân nhập nhầm (UC-GEN-05)
       responses:
@@ -493,6 +512,7 @@ paths:
     parameters:
       - $ref: '#/components/parameters/familyId'
     get:
+      operationId: getFamilyTree
       tags: [tree]
       summary: Lấy cây gia phả dạng nodes/edges cho React Flow (UC-GEN-06)
       description: |
@@ -525,6 +545,7 @@ paths:
 
   /relationships:
     get:
+      operationId: getRelationship
       tags: [relationships]
       summary: Truy vấn quan hệ A là gì của B, kèm đường đi (UC-GEN-07, UC-GEN-08)
       description: |
@@ -715,7 +736,7 @@ components:
         isDeceased: { type: boolean, default: false }
         deathDate: { type: string, format: date, nullable: true }
         burialPlace: { type: string, nullable: true }
-        avatarUrl: { type: string, nullable: true }
+        avatarMediaId: { type: string, format: uuid, nullable: true, description: "Id ảnh trong media của module community; tải ảnh qua endpoint có kiểm tra quyền" }
         userId: { type: string, format: uuid, nullable: true, description: Phải null nếu dưới 16 tuổi }
         note: { type: string, nullable: true, description: Không ghi nguyên nhân tử vong chi tiết }
     Person:
@@ -735,7 +756,7 @@ components:
         isDeceased: { type: boolean }
         deathDate: { type: string, format: date, nullable: true }
         burialPlace: { type: string, nullable: true }
-        avatarUrl: { type: string, nullable: true }
+        avatarMediaId: { type: string, format: uuid, nullable: true, description: "Id ảnh trong media của module community; tải ảnh qua endpoint có kiểm tra quyền" }
         note: { type: string, nullable: true }
         createdAt: { type: string, format: date-time }
         updatedAt: { type: string, format: date-time }
