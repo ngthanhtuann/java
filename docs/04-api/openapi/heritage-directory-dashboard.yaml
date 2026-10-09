@@ -238,6 +238,8 @@ paths:
       description: |
         Vai trò: BRANCH_ADMIN, SYSTEM_ADMIN (MEMBER gọi trả 403 PERM_001). Tệp được tải lên trước bằng `POST /media` của community, sau đó gắn bằng `mediaId`.
         `media.family_id` phải trùng gia đình của người dùng, nếu không trả 403 PERM_001 (chống IDOR). `mediaId` không tồn tại trả 404.
+        Tệp gắn vào tài liệu là media có `ownerType = HERITAGE`: ảnh `jpg`, `png`, `webp` (tối đa 5 MB) hoặc tệp `pdf` (tối đa 10 MB;
+        việc cho phép `pdf` là đề xuất, chờ nhóm xác nhận ở họp Sprint 2, xem conventions.md mục 7.3).
         Sau khi tạo, module ai được thông báo qua interface để cập nhật embedding.
       operationId: createDocument
       x-roles: [BRANCH_ADMIN, SYSTEM_ADMIN]
@@ -477,6 +479,8 @@ paths:
       description: |
         Vai trò MEMBER, BRANCH_ADMIN, SYSTEM_ADMIN. Đọc các bản ghi media có `owner_type = 'HERITAGE'` của gia đình
         qua interface của community; chú thích lấy từ `media.caption`.
+        Chỉ trả tệp ảnh (`jpg`, `png`, `webp`) chưa được `heritage_document` tham chiếu; tệp `pdf` và ảnh đã gắn vào
+        tài liệu lịch sử không nằm trong thư viện ảnh, chỉ xem ở `/heritage/documents` (BR-HER-03).
         Tải ảnh lên dùng `POST /media` của community với `ownerType = HERITAGE` (không có POST /heritage/photos).
       operationId: getHeritagePhotos
       x-roles: [MEMBER, BRANCH_ADMIN, SYSTEM_ADMIN]
@@ -501,7 +505,9 @@ paths:
     get:
       tags: [Heritage]
       summary: Danh sách người tiêu biểu (UC-HER-04)
-      description: Vai trò MEMBER, BRANCH_ADMIN, SYSTEM_ADMIN.
+      description: |
+        Vai trò MEMBER, BRANCH_ADMIN, SYSTEM_ADMIN.
+        Sắp xếp mặc định `displayOrder,asc`: mặc định khác `createdAt,desc` của conventions vì cần giữ thứ tự hiển thị do quản trị viên đặt.
       operationId: getOutstandingMembers
       x-roles: [MEMBER, BRANCH_ADMIN, SYSTEM_ADMIN]
       parameters:
@@ -821,7 +827,7 @@ components:
         title: { type: string, maxLength: 200, example: "Gia phả đời thứ 3" }
         description: { type: string, nullable: true, example: "Bản số hóa" }
         category: { type: string, nullable: true, maxLength: 50, example: "gia-pha" }
-        mediaId: { type: string, format: uuid, description: Tệp đã tải lên qua community, phải cùng gia đình. }
+        mediaId: { type: string, format: uuid, description: "Tệp đã tải lên qua community (ownerType = HERITAGE), phải cùng gia đình; nhận ảnh jpg, png, webp hoặc tệp pdf." }
     UpdateHeritageDocumentRequest:
       type: object
       minProperties: 1
@@ -877,7 +883,7 @@ components:
         id: { type: string, format: uuid }
         title: { type: string }
         content: { type: string }
-        authorName: { type: string, description: Tên người đăng (created_by), tra qua interface. }
+        authorName: { type: string, description: "Tên người đăng (created_by), tra qua interface." }
         relatedPersonId: { type: string, format: uuid, nullable: true }
         createdAt: { type: string, format: date-time }
         updatedAt: { type: string, format: date-time }
