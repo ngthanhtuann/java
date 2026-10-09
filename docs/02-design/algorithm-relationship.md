@@ -1,6 +1,6 @@
 # Đặc tả thuật toán xác định quan hệ họ hàng ("A là gì của B")
 
-> **Người viết:** TV2 (Nguyễn Minh Trí) | **Reviewer:** TV1 (Nguyễn Thanh Tuấn) | **Task Jira:** SCRUM-19 (1-06) | **Trạng thái:** Chờ review
+> **Người viết:** TV2 (Nguyễn Minh Trí) | **Reviewer:** TV1 (Nguyễn Thanh Tuấn) | **Task Jira:** SCRUM-19 (1-06) | **Trạng thái:** Đã merge vào `develop` (Sprint 1)
 > **Phiên bản:** 0.3 (đã sửa theo review lần 2 của TV1) | **Nhánh:** `docs/SCRUM-19-relationship-algorithm`
 > **Liên quan:** FR-GEN-07, FR-GEN-08, FR-AI-03 | UC-GEN-07 «include» UC-GEN-08 | API `GET /relationships?personA=&personB=` | bảng `parent_child`, `person`, `marriage`
 

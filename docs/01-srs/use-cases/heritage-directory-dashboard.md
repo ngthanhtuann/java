@@ -1,5 +1,5 @@
 > **Người viết:** TV4 (Huy Quốc) | **Reviewer:** Nguyễn Thanh Tuấn | **Task Jira:** SCRUM-22
-> **Trạng thái:** Chờ review | **Phiên bản:** 0.2 (đã sửa theo review của TV1)
+> **Trạng thái:** Đã merge vào `develop` (Sprint 1) | **Phiên bản:** 0.2 (đã sửa theo review của TV1)
 
 # TÀI LIỆU ĐẶC TẢ MODULE: HERITAGE, DIRECTORY, DASHBOARD
 **Nhánh Git:** docs/SCRUM-22-heritage-directory-dashboard
@@ -164,7 +164,7 @@ API xóa trả `200` với `{ "success": true, "data": null }`, không dùng `20
 1. **Xóa tệp vật lý:** đề xuất khi xóa mềm `heritage_document` thì **giữ** tệp trong kho để khôi phục; việc dọn tệp mồ côi quyết định cùng spike lưu trữ ảnh (SCRUM-31).
 
 ## 4. THIẾT KẾ CƠ SỞ DỮ LIỆU
-*Quy ước chung: Khóa chính UUID. Các bảng có `id`, `created_at`, `updated_at`, `deleted_at`, `created_by`, `updated_by`. Khóa ngoại chỉ dùng giữa các bảng trong cùng module (`architecture.md` mục 7, quyết định 9). Năm bảng dưới đây chỉ tham chiếu bảng của module khác (`users` của auth; `family`, `person` của genealogy; `media` của community) nên **không khai báo FK**: các cột này lưu UUID thường, có index, và service kiểm tra tồn tại, quyền và `family_id` qua interface Java của module tương ứng.*
+*Quy ước chung: Khóa chính UUID. Các bảng có `id`, `created_at`, `updated_at`, `deleted_at`, `created_by` (NOT NULL), `updated_by` (NULL cho đến lần sửa đầu tiên, giống các module khác). Khóa ngoại chỉ dùng giữa các bảng trong cùng module (`architecture.md` mục 7, quyết định 9). Năm bảng dưới đây chỉ tham chiếu bảng của module khác (`users` của auth; `family`, `person` của genealogy; `media` của community) nên **không khai báo FK**: các cột này lưu UUID thường, có index, và service kiểm tra tồn tại, quyền và `family_id` qua interface Java của module tương ứng.*
 
 ```sql
 -- 1. Bảng tài liệu lịch sử
@@ -180,7 +180,7 @@ CREATE TABLE heritage_document (
     updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     deleted_at TIMESTAMP WITH TIME ZONE NULL,
     created_by UUID NOT NULL,                  -- tham chiếu users của module auth, kiểm tra ở service
-    updated_by UUID NOT NULL                   -- tham chiếu users của module auth, kiểm tra ở service
+    updated_by UUID NULL                       -- tham chiếu users của module auth, kiểm tra ở service
 );
 CREATE INDEX idx_heritage_doc_media ON heritage_document (media_id);
 CREATE INDEX idx_heritage_doc_family ON heritage_document (family_id, created_at DESC) WHERE deleted_at IS NULL;
@@ -198,7 +198,7 @@ CREATE TABLE family_story (
     updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     deleted_at TIMESTAMP WITH TIME ZONE NULL,
     created_by UUID NOT NULL,                  -- tham chiếu users của module auth, kiểm tra ở service
-    updated_by UUID NOT NULL                   -- tham chiếu users của module auth, kiểm tra ở service
+    updated_by UUID NULL                       -- tham chiếu users của module auth, kiểm tra ở service
 );
 CREATE INDEX idx_family_story_family ON family_story (family_id, created_at DESC) WHERE deleted_at IS NULL;
 CREATE INDEX idx_family_story_related ON family_story (related_person_id) WHERE deleted_at IS NULL AND related_person_id IS NOT NULL;
@@ -216,7 +216,7 @@ CREATE TABLE outstanding_member (
     updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     deleted_at TIMESTAMP WITH TIME ZONE NULL,
     created_by UUID NOT NULL,                  -- tham chiếu users của module auth, kiểm tra ở service
-    updated_by UUID NOT NULL                   -- tham chiếu users của module auth, kiểm tra ở service
+    updated_by UUID NULL                       -- tham chiếu users của module auth, kiểm tra ở service
 );
 CREATE UNIQUE INDEX uq_outstanding_person ON outstanding_member (family_id, person_id) WHERE deleted_at IS NULL;
 CREATE INDEX idx_outstanding_display ON outstanding_member (family_id, display_order);
@@ -236,7 +236,7 @@ CREATE TABLE profession_profile (
     updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     deleted_at TIMESTAMP WITH TIME ZONE NULL,
     created_by UUID NOT NULL,                  -- tham chiếu users của module auth, kiểm tra ở service
-    updated_by UUID NOT NULL                   -- tham chiếu users của module auth, kiểm tra ở service
+    updated_by UUID NULL                       -- tham chiếu users của module auth, kiểm tra ở service
 );
 CREATE UNIQUE INDEX uq_prof_person ON profession_profile (person_id) WHERE deleted_at IS NULL;
 CREATE INDEX idx_prof_family ON profession_profile (family_id);
@@ -255,7 +255,7 @@ CREATE TABLE education_profile (
     updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     deleted_at TIMESTAMP WITH TIME ZONE NULL,
     created_by UUID NOT NULL,                  -- tham chiếu users của module auth, kiểm tra ở service
-    updated_by UUID NOT NULL                   -- tham chiếu users của module auth, kiểm tra ở service
+    updated_by UUID NULL                       -- tham chiếu users của module auth, kiểm tra ở service
 );
 CREATE UNIQUE INDEX uq_edu_person ON education_profile (person_id) WHERE deleted_at IS NULL;
 CREATE INDEX idx_edu_family ON education_profile (family_id);
@@ -290,6 +290,8 @@ WHERE family_id = :familyId AND deleted_at IS NULL
 GROUP BY gender;
 ```
 ### 5.4 Thống kê nghề nghiệp (loại trừ trẻ dưới 16 tuổi và người đã mất)
+> Câu dưới chỉ mô tả điều kiện lọc. Khi triển khai không join `profession_profile` với `person` (khác module): module directory lấy danh sách `person_id` hợp lệ (còn sống, từ 16 tuổi, đúng `family_id` và `branchId`) từ `GenealogyInterface`, rồi đếm trên `profession_profile` với `person_id = ANY(:personIds)`.
+
 ```sql
 SELECT pf.job_title, COUNT(*) AS count
 FROM profession_profile pf

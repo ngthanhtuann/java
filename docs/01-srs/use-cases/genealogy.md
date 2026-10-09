@@ -1,7 +1,7 @@
 # Use case module Gia phả (Genealogy)
 
 > **Người viết:** TV2 (Nguyễn Minh Trí) | **Reviewer:** TV5 (Lê Nhựt) | **Task Jira:** SCRUM-18 (1-05)
-> **Phiên bản:** 0.4 | **Trạng thái:** Chờ review | **Nhánh:** `docs/SCRUM-18-genealogy`
+> **Phiên bản:** 0.4 | **Trạng thái:** Đã merge vào `develop` (Sprint 1) | **Nhánh:** `docs/SCRUM-18-genealogy`
 > **Bám theo:** `docs/01-srs/srs.md` mục 3 (FR-GEN-01 đến FR-GEN-08) và Phụ lục A (phân quyền); `docs/01-srs/privacy.md`; `docs/04-api/conventions.md`; `docs/02-design/architecture.md` mục 7.
 > Mục đánh dấu **[Cần nhóm xác nhận]** là chỗ SRS chưa quy định rõ, TV2 tạm đề xuất.
 
@@ -13,7 +13,7 @@ Module Gia phả (backend: `com.familyconnect.modules.genealogy`) quản lý gia
 
 | Mã UC | Tên | Actor | Mã FR | Ưu tiên | Sprint | Task Jira |
 |---|---|---|---|---|---|---|
-| UC-GEN-01 | Quản lý gia đình (tạo, sửa, xóa) | Tạo: người dùng đã đăng nhập chưa thuộc gia đình nào; sửa: BRANCH_ADMIN; xóa: SYSTEM_ADMIN | FR-GEN-01 | Must | S3 | SCRUM-37 |
+| UC-GEN-01 | Quản lý gia đình (tạo, sửa, xóa) | Tạo: người dùng đã đăng nhập chưa thuộc gia đình nào, hoặc SYSTEM_ADMIN; sửa: BRANCH_ADMIN, SYSTEM_ADMIN; xóa: SYSTEM_ADMIN | FR-GEN-01 | Must | S3 | SCRUM-37 |
 | UC-GEN-02 | Quản lý chi họ | BRANCH_ADMIN, SYSTEM_ADMIN | FR-GEN-02 | Must | S3 | SCRUM-37 |
 | UC-GEN-03 | Quản lý thành viên (thêm, sửa, xóa) | BRANCH_ADMIN, SYSTEM_ADMIN | FR-GEN-03 (đề tài ghi thiếu chữ, hiểu là *Member management*) | Must | S3 | SCRUM-37 |
 | UC-GEN-04 | Quản lý quan hệ cha-mẹ-con | BRANCH_ADMIN, SYSTEM_ADMIN | FR-GEN-04 | Must | S4 | SCRUM-44 |
@@ -52,12 +52,12 @@ Hệ thống chỉ có 4 vai trò (SRS Phụ lục A): `GUEST`, `MEMBER`, `BRANC
 | Mục | Nội dung |
 |---|---|
 | Mã FR liên quan | FR-GEN-01 |
-| Actor | Tạo mới: người dùng đã đăng nhập chưa thuộc gia đình nào (kể cả `MEMBER` chưa xác minh). Sửa: BRANCH_ADMIN của gia đình, SYSTEM_ADMIN. Xóa: SYSTEM_ADMIN. |
+| Actor | Tạo mới: người dùng đã đăng nhập chưa thuộc gia đình nào (kể cả `MEMBER` chưa xác minh), hoặc `SYSTEM_ADMIN` (theo `srs.md` Phụ lục A). Sửa: BRANCH_ADMIN của gia đình, SYSTEM_ADMIN. Xóa: SYSTEM_ADMIN. |
 | Mô tả ngắn | Tạo, sửa, xóa mềm gia đình (dòng họ). Người tạo là "chủ gia đình" (`family.created_by`). |
-| Tiền điều kiện | Đã đăng nhập. Tạo mới: chưa thuộc gia đình nào (BR-GEN-15). Sửa, xóa: có quyền tương ứng trên gia đình đó. |
+| Tiền điều kiện | Đã đăng nhập. Tạo mới: chưa thuộc gia đình nào (BR-GEN-15); `SYSTEM_ADMIN` không bị ràng buộc này. Sửa, xóa: có quyền tương ứng trên gia đình đó. |
 | Luồng chính (tạo gia đình) | 1. Người dùng chọn "Tạo gia đình".<br>2. Nhập tên gia đình (bắt buộc, tối đa 150 ký tự), mô tả (tùy chọn).<br>3. Hệ thống kiểm tra hợp lệ, tạo bản ghi `family` với `created_by` là người tạo.<br>4. Hệ thống gán người tạo làm `BRANCH_ADMIN` của gia đình này và đặt trạng thái đã xác minh (qua `member_verification` của module auth) **[Cần nhóm xác nhận]**.<br>5. Hệ thống ghi audit log (cơ chế chung của SCRUM-57) và trả về gia đình vừa tạo. |
-| Luồng thay thế / ngoại lệ | 2a. Tên trống hoặc quá 150 ký tự: lỗi `VALID_001`, giữ nguyên form.<br>2b. Trùng tên với gia đình khác do cùng người tạo: cảnh báo, cho phép tiếp tục.<br>2c. Người dùng đã thuộc một gia đình: lỗi `GEN_013`.<br>Sửa: người có quyền đổi tên, mô tả.<br>Xóa: chỉ `SYSTEM_ADMIN`, xóa mềm; còn thành viên thì lỗi `GEN_001`. |
-| Hậu điều kiện | Gia đình tồn tại; người tạo là BRANCH_ADMIN; thay đổi được ghi audit log. |
+| Luồng thay thế / ngoại lệ | 2a. Tên trống hoặc quá 150 ký tự: lỗi `VALID_001`, giữ nguyên form.<br>2b. Trùng tên với gia đình khác do cùng người tạo: cảnh báo, cho phép tiếp tục.<br>2c. Người dùng đã thuộc một gia đình (và không phải `SYSTEM_ADMIN`): lỗi `GEN_013`.<br>2d. Người tạo là `SYSTEM_ADMIN`: bỏ qua bước 4, quản trị không trở thành thành viên hay `BRANCH_ADMIN` của gia đình; trưởng chi được gán sau qua chức năng quản lý người dùng (FR-ADM-01) **[Cần nhóm xác nhận]**.<br>Sửa: người có quyền đổi tên, mô tả.<br>Xóa: chỉ `SYSTEM_ADMIN`, xóa mềm; còn thành viên thì lỗi `GEN_001`. |
+| Hậu điều kiện | Gia đình tồn tại; người tạo là BRANCH_ADMIN (trừ khi người tạo là SYSTEM_ADMIN); thay đổi được ghi audit log. |
 | Quy tắc nghiệp vụ | BR-GEN-09, BR-GEN-11, BR-GEN-14, BR-GEN-15 |
 
 ### UC-GEN-02: Quản lý chi họ
@@ -164,7 +164,7 @@ Hệ thống chỉ có 4 vai trò (SRS Phụ lục A): `GUEST`, `MEMBER`, `BRANC
 | BR-GEN-12 | Cây chi họ không có vòng lặp: chi không thể là tổ tiên (chi cha) của chính nó. |
 | BR-GEN-13 | Con nuôi (`ADOPTED`) và con kế (`STEP`) vẫn được tính trong cây; thuật toán quan hệ họ hàng mặc định tính cả hai loại và hiển thị nhãn "nuôi" hoặc "kế" khi cần **[Cần nhóm xác nhận]**. |
 | BR-GEN-14 | **Tách dữ liệu theo gia đình, chống IDOR** (`privacy.md`, mục "Xác minh thành viên và tách dữ liệu gia đình"): mọi API lọc theo `family_id` của người đang đăng nhập (lấy từ `member_verification` của module auth, SCRUM-26); người chưa xác minh nhận 403 `PERM_002`; truy cập gia đình khác nhận 403 `PERM_001`. Mỗi API có một test: gia đình A gọi dữ liệu gia đình B phải bị từ chối. **Phạm vi quyền sửa:** `BRANCH_ADMIN` được gán trong `member_verification` (module auth, SCRUM-26) kèm `branch_id`. `branch_id` có giá trị: quản lý chi đó và các chi con (đi theo `branch.parent_branch_id`). `branch_id` NULL: quản lý cả gia đình (người tạo gia đình, tức `family.created_by`, mặc định thuộc dạng này). Thành viên chưa gán chi chỉ người quản lý cả gia đình mới sửa được. Quan hệ hoặc hôn nhân giữa hai người khác chi cần có quyền ở một trong hai bên. Module Gia phả chỉ lưu UUID, không nối khóa ngoại sang bảng của module auth. |
-| BR-GEN-15 | Mỗi người dùng thuộc tối đa **một gia đình** (khớp việc lọc theo `family_id` của người đăng nhập). Chỉ người chưa thuộc gia đình nào mới tạo gia đình mới **[Cần nhóm xác nhận]**. |
+| BR-GEN-15 | Mỗi người dùng thuộc tối đa **một gia đình** (khớp việc lọc theo `family_id` của người đăng nhập). Chỉ người chưa thuộc gia đình nào mới tạo gia đình mới; ngoại lệ là `SYSTEM_ADMIN`, được tạo gia đình thay người dùng mà không trở thành thành viên của gia đình đó (`srs.md` Phụ lục A) **[Cần nhóm xác nhận]**. |
 | BR-GEN-16 | **Trẻ em dưới 16 tuổi không có tài khoản đăng nhập riêng**: `person.user_id` phải là NULL; hồ sơ do cha mẹ hoặc trưởng chi quản lý. Kiểm tra ở tầng service (tuổi thay đổi theo thời gian nên DB không biểu diễn gọn). |
 | BR-GEN-17 | Người **còn sống** phải có ngày sinh đầy đủ (`birth_date`) để hệ thống tính tuổi áp dụng BR-GEN-10. Người đã mất (tổ tiên) có thể chỉ biết năm sinh: lưu vào `birth_year`. |
 | BR-GEN-18 | **Dữ liệu cho AI** (`privacy.md`, mục "Dữ liệu gửi cho AI"): người dưới 16 tuổi chỉ đưa họ tên và quan hệ vào ngữ cảnh; không gửi ngày sinh đầy đủ, địa chỉ chi tiết. Khi thành viên hoặc quan hệ thay đổi, module `ai` cập nhật embedding qua interface Java (mục 9). |
@@ -329,7 +329,7 @@ Tất cả API nằm dưới `/api/v1`, tên tài nguyên số nhiều, theo `do
 | Method | Đường dẫn | Mục đích | UC | Quyền |
 |---|---|---|---|---|
 | GET | `/families` | Gia đình của tôi | UC-GEN-01 | Người đã đăng nhập |
-| POST | `/families` | Tạo gia đình | UC-GEN-01 | Người đã đăng nhập, chưa thuộc gia đình nào |
+| POST | `/families` | Tạo gia đình | UC-GEN-01 | Người đã đăng nhập, chưa thuộc gia đình nào; SYSTEM_ADMIN |
 | GET | `/families/{familyId}` | Xem gia đình | UC-GEN-01 | MEMBER đã xác minh trở lên (gia đình của mình) |
 | PUT | `/families/{familyId}` | Sửa gia đình | UC-GEN-01 | BRANCH_ADMIN, SYSTEM_ADMIN |
 | DELETE | `/families/{familyId}` | Xóa mềm gia đình | UC-GEN-01 | SYSTEM_ADMIN |
@@ -409,7 +409,7 @@ Ngày mất trước ngày sinh, người còn sống thiếu ngày sinh, chi h�
 
 ## 11. Câu hỏi còn mở
 
-1. Ai được tạo gia đình? Đề xuất: người dùng đã đăng nhập chưa thuộc gia đình nào, trở thành BRANCH_ADMIN của gia đình đó. Cần thêm hàng "Tạo gia đình" vào SRS Phụ lục A. (UC-GEN-01, BR-GEN-15)
+1. Ai được tạo gia đình? Đã có hàng "Tạo gia đình mới" ở SRS Phụ lục A: người dùng chưa thuộc gia đình nào (trở thành BRANCH_ADMIN của gia đình đó) và SYSTEM_ADMIN. Còn cần nhóm xác nhận: khi SYSTEM_ADMIN tạo thì gán trưởng chi qua quản lý người dùng (UC-GEN-01 luồng 2d, BR-GEN-15).
 2. Cha mẹ sinh cách con dưới 15 năm thì cảnh báo hay từ chối? (BR-GEN-04)
 3. Con nuôi, con kế có được tính trong thuật toán quan hệ họ hàng không? (BR-GEN-13)
 4. Nhóm hiểu FR-GEN-07 "Relationship visualization" là tô sáng đường quan hệ giữa hai người (như UC-GEN-07), hay là toàn bộ việc vẽ cây? Nếu là vẽ cây thì gộp UC-GEN-07 vào UC-GEN-06.

@@ -1,6 +1,6 @@
 # Kiến trúc tổng thể
 > **Người viết:** TV4 (Huy Quốc) | **Reviewer:** TV2 (Nguyễn Minh Trí) | **Task Jira:** SCRUM-23 | **Hạn nộp review:** Thứ Tư 7/10
-> **Trạng thái:** Chờ review
+> **Trạng thái:** Đã merge vào `develop` (Sprint 1)
 
 ## 1. Sơ đồ thành phần
 > Thể hiện đúng kiến trúc đề tài: **Web Management Portal**, **Mobile Application**, **AI Service Layer** kết nối qua **RESTful API**. Các khối logic trong Spring Boot backend và cách xử lý lỗi tập trung.

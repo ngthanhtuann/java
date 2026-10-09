@@ -1,7 +1,7 @@
 # ADR: Spike AI, RAG, Spring AI, pgvector
 
 > **Người làm:** TV5 (Lê Nhựt) | **Reviewer:** TV3 (PiLo257) | **Task Jira:** SCRUM-24
-> **Trạng thái:** Chờ review (còn các mục chưa đo, bổ sung ở Sprint 2) | **Ngày thử nghiệm:** Chưa đo, bổ sung ở SCRUM-34 (Sprint 2)
+> **Trạng thái:** Chờ review (còn các mục chưa đo, bổ sung ở Sprint 2) | **Ngày thử nghiệm:** chưa ghi, bổ sung ở SCRUM-34 (Sprint 2)
 > Mã thử nghiệm nằm ở nhánh `spike/SCRUM-24-rag` (không merge vào `develop`). **Không có API key trong repo.** Thiết kế chi tiết RAG viết ở `ai-rag.md` (SCRUM-34, Sprint 2).
 
 ## 1. Bối cảnh
@@ -88,4 +88,4 @@ Lý do sơ bộ: đã tích hợp được, đã đo thời gian tạo embedding
 ## 7. Việc tiếp theo
 
 - SCRUM-34: viết `ai-rag.md` (phân đoạn dữ liệu, prompt hệ thống, ngưỡng điểm, giới hạn, quyền dữ liệu) dựa trên quyết định này.
-- Bảng `ai_embedding_chunk` đưa vào ERD (SCRUM-26 trở đi) với số chiều đã chốt.
+- Bảng `ai_embedding_chunk` đưa vào ERD (SCRUM-28) với số chiều đã chốt.

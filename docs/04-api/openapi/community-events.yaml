@@ -1444,7 +1444,10 @@ paths:
       operationId: listEventParticipants
       x-roles: [MEMBER, BRANCH_ADMIN, SYSTEM_ADMIN]
       description: Kiểm tra Bearer JWT, trạng thái xác minh và phạm vi family/branch
-        theo người dùng đăng nhập.
+        theo người dùng đăng nhập. Mọi thành viên đã xác minh có quyền xem sự kiện đều
+        xem được danh sách (srs.md Phụ lục A); chỉ trả họ tên và trạng thái RSVP, không
+        kèm thông tin liên hệ. Thêm, gỡ người tham dự chỉ dành cho người tạo sự kiện,
+        BRANCH_ADMIN trong phạm vi và SYSTEM_ADMIN.
       security:
       - bearerAuth: []
       responses:

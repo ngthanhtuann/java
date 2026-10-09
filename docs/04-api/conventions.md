@@ -3,7 +3,7 @@
 > **Người viết:** TV3 (PiLo257)
 > **Reviewer:** TV1 (Tuấn Nguyễn Thanh)
 > **Task Jira:** SCRUM-21
-> **Trạng thái:** Chờ review
+> **Trạng thái:** Đã merge vào `develop` (Sprint 1)
 
 Tài liệu này quy định chuẩn API chung của FamilyConnect cho web và mobile. Tất cả module phải tuân theo tài liệu này khi thiết kế OpenAPI và triển khai backend.
 

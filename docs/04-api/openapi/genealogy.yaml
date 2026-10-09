@@ -51,7 +51,7 @@ paths:
       x-roles: [MEMBER, SYSTEM_ADMIN]
       tags: [families]
       summary: Tạo gia đình (UC-GEN-01)
-      description: Người tạo trở thành chủ gia đình (BRANCH_ADMIN). Chỉ người chưa thuộc gia đình nào (BR-GEN-15).
+      description: Người tạo trở thành chủ gia đình (BRANCH_ADMIN). Chỉ người chưa thuộc gia đình nào (BR-GEN-15), kể cả MEMBER chưa xác minh. SYSTEM_ADMIN cũng được tạo (srs.md Phụ lục A) nhưng không trở thành thành viên hay BRANCH_ADMIN của gia đình và không bị lỗi GEN_013.
       requestBody:
         required: true
         content:
