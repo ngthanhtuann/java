@@ -1,8 +1,7 @@
 # Use case: Community và Events
 
 > **Người viết:** TV3 (PiLo257) | **Reviewer:** TV1 (Tuấn Nguyễn Thanh) | **Task Jira:** SCRUM-20 | **Hạn nộp review:** Thứ Năm 8/10
-> **Trạng thái:** Nháp 
-> Cách làm: tạo nhánh `docs/<mã SCRUM>-<tên-ngắn>` từ `develop`, điền vào file này, mở Pull Request vào `develop`. Xem `docs/README.md`.
+> **Trạng thái:** Chờ review
 
 ## 1. Phạm vi và Actor
 
@@ -12,10 +11,10 @@ Module Community và Events cung cấp các chức năng phục vụ việc chia
 
 | Actor | Vai trò |
 |---|---|
-| Thành viên (MEMBER) | Tạo bài đăng, bình luận, reaction, chia sẻ ảnh, tham gia sự kiện |
-| Trưởng chi (BRANCH_ADMIN) | Quản lý nội dung/thông báo theo quyền của chi |
-| Người tạo sự kiện | Tạo và quản lý người tham dự sự kiện |
-| Hệ thống | Gửi nhắc nhở sự kiện |
+| Thành viên (MEMBER) | Tạo bài đăng thường, bình luận, reaction, chia sẻ ảnh, RSVP và tham gia sự kiện sau khi xác minh |
+| Trưởng chi (BRANCH_ADMIN) | Quản lý nội dung trong phạm vi chi; đăng tin tức gia đình và thông báo |
+| Quản trị hệ thống (SYSTEM_ADMIN) | Kiểm duyệt và xóa nội dung vi phạm trong phạm vi quản trị hệ thống |
+| Hệ thống | Tạo thông báo và xử lý nhắc nhở sự kiện theo cấu hình đã được nhóm chốt |
 
 ### Quy tắc truy cập
 
@@ -23,7 +22,8 @@ Module Community và Events cung cấp các chức năng phục vụ việc chia
 - Chỉ thành viên đã được xác minh mới được truy cập các nội dung yêu cầu quyền thành viên.
 - Quyền tạo, sửa và xóa nội dung được kiểm tra theo vai trò và quyền của người dùng.
 - Người dùng chỉ được sửa hoặc xóa nội dung do mình tạo, hoặc nội dung mà vai trò của mình được phép quản lý.
-- Nội dung của gia đình chỉ được hiển thị cho thành viên đã được xác minh của đúng gia đình.
+- Mọi truy vấn phải giới hạn theo `family_id` của người đăng nhập; không tin `family_id` do client gửi. Người dùng thuộc gia đình A gọi dữ liệu gia đình B phải bị từ chối (chống IDOR).
+- `branch_id = NULL` biểu thị phạm vi toàn gia đình; có `branch_id` thì nội dung thuộc phạm vi chi. Việc hiển thị cho chi con đang cần nhóm xác nhận.
 
 ### Phân trang
 
@@ -35,36 +35,44 @@ Ví dụ:
 
 Thông tin phân trang được trả về trong trường `meta` theo quy ước API chung của FamilyConnect.
 
-## 2. Danh sách use case
+## 2. Use Case Diagram
+
+![Community và Events Use Case Diagram](../../images/community-events-usecase.drawio.png)
+
+File nguồn có thể chỉnh sửa: [`community-events-usecase.drawio`](../../images/community-events-usecase.drawio).
+
+Sơ đồ thể hiện 4 actor theo hệ thống: `MEMBER`, `BRANCH_ADMIN`, `SYSTEM_ADMIN` và `Hệ thống`; các quyền sở hữu sự kiện là điều kiện sở hữu tài nguyên, không phải một role riêng.
+
+## 3. Danh sách use case
 
 | Mã UC | Tên | Actor | Mã FR | Ưu tiên |
 |---|---|---|---|---|
 | UC-COM-01 | Tạo, sửa, xóa bài đăng | Thành viên | FR-COM-01 | Must |
 | UC-COM-02 | Bình luận | Thành viên | FR-COM-02 | Must |
 | UC-COM-03 | Thả reaction | Thành viên | FR-COM-02 | Must |
-| UC-COM-04 | Chia sẻ tin tức gia đình | Thành viên | FR-COM-03 | Must |
+| UC-COM-04 | Chia sẻ tin tức gia đình | Trưởng chi, Quản trị hệ thống | FR-COM-03 | Must |
 | UC-COM-05 | Tải và chia sẻ ảnh | Thành viên | FR-COM-04 | Must |
 | UC-COM-06 | Đăng thông báo (announcement) | Trưởng chi | FR-COM-05 | Must |
 | UC-EVT-01 | Tạo sự kiện | Thành viên, Trưởng chi | FR-EVT-01 | Must |
 | UC-EVT-02 | RSVP (Tham dự / Không / Có thể) | Thành viên | FR-EVT-02 | Must |
-| UC-EVT-03 | Quản lý người tham dự | Người tạo sự kiện | FR-EVT-03 | Must |
+| UC-EVT-03 | Quản lý người tham dự | MEMBER (người tạo sự kiện), Trưởng chi | FR-EVT-03 | Must |
 | UC-EVT-04 | Thư viện ảnh sự kiện | Thành viên | FR-EVT-04 | Must |
 | UC-EVT-05 | Nhắc nhở sự kiện | Hệ thống | FR-EVT-05 | Must |
 
-## 3. Đặc tả từng use case
+## 4. Đặc tả từng use case
 
 ### UC-COM-01: Tạo, sửa, xóa bài đăng
 
 | Mục | Nội dung |
 |---|---|
 | Mã FR liên quan | FR-COM-01 |
-| Actor | Thành viên |
-| Mô tả ngắn | Thành viên tạo bài đăng và có thể sửa hoặc xóa bài đăng của mình. |
+| Actor | MEMBER; BRANCH_ADMIN; SYSTEM_ADMIN (theo quyền quản lý/xử lý vi phạm) |
+| Mô tả ngắn | Thành viên tạo bài đăng thường; người tạo có thể sửa bài của mình và các vai trò quản trị chỉ xóa trong phạm vi quyền được quy định. |
 | Tiền điều kiện | Người dùng đã đăng nhập và là thành viên đã được xác minh. |
-| Luồng chính | 1. Thành viên chọn chức năng tạo bài đăng.<br>2. Thành viên nhập nội dung bài đăng và gửi yêu cầu.<br>3. Hệ thống kiểm tra dữ liệu và quyền truy cập.<br>4. Hệ thống lưu bài đăng và hiển thị kết quả. |
-| Luồng thay thế / ngoại lệ | 2a. Nội dung không hợp lệ, hệ thống trả về lỗi và yêu cầu nhập lại.<br>3a. Người dùng không có quyền, hệ thống từ chối yêu cầu. |
+| Luồng chính | 1. Thành viên chọn chức năng tạo bài đăng.<br>2. Thành viên nhập nội dung và gửi yêu cầu.<br>3. Hệ thống kiểm tra dữ liệu, family_id và phạm vi branch_id.<br>4. Hệ thống lưu bài đăng và trả dữ liệu.<br>5. Khi cần, người tạo sửa bài của mình bằng PATCH; người tạo, BRANCH_ADMIN trong phạm vi chi hoặc SYSTEM_ADMIN có thể xóa mềm bằng DELETE. |
+| Luồng thay thế / ngoại lệ | 2a. Nội dung không hợp lệ, hệ thống trả lỗi.<br>3a. Thành viên chưa xác minh nhận 403 PERM_002; người dùng ngoài gia đình/phạm vi chi bị từ chối.<br>5a. Người không phải người tạo sửa bài hoặc không có quyền xóa nhận 403. |
 | Hậu điều kiện | Bài đăng được tạo và có thể hiển thị cho các thành viên được phép xem. |
-| Quy tắc nghiệp vụ | BR-01 |
+| Quy tắc nghiệp vụ | BR-COM-05 |
 
 ### UC-COM-02: Bình luận
 
@@ -74,10 +82,10 @@ Thông tin phân trang được trả về trong trường `meta` theo quy ướ
 | Actor | Thành viên |
 | Mô tả ngắn | Thành viên thêm bình luận vào bài đăng mà mình được phép xem. |
 | Tiền điều kiện | Người dùng đã đăng nhập và đã được xác minh thành viên. Bài đăng tồn tại và người dùng được phép xem. |
-| Luồng chính | 1. Thành viên mở một bài đăng.<br>2. Thành viên nhập nội dung bình luận và gửi.<br>3. Hệ thống kiểm tra quyền và dữ liệu.<br>4. Hệ thống lưu bình luận và hiển thị bình luận. |
-| Luồng thay thế / ngoại lệ | 2a. Nội dung bình luận không hợp lệ, hệ thống yêu cầu nhập lại.<br>3a. Người dùng không có quyền xem bài đăng, hệ thống từ chối yêu cầu. |
+| Luồng chính | 1. Thành viên mở bài đăng mình được phép xem và xem danh sách bình luận.<br>2. Thành viên nhập bình luận rồi gửi.<br>3. Hệ thống kiểm tra quyền, dữ liệu và giới hạn độ dài đã được thống nhất.<br>4. Hệ thống lưu và hiển thị bình luận.<br>5. Người tạo bình luận có thể sửa hoặc xóa bình luận của mình; BRANCH_ADMIN trong phạm vi và SYSTEM_ADMIN có thể xóa bình luận vi phạm. |
+| Luồng thay thế / ngoại lệ | 2a. Nội dung bình luận không hợp lệ hoặc vượt giới hạn được cấu hình, hệ thống trả lỗi.<br>3a. Người dùng không có quyền xem bài đăng hoặc chưa được xác minh (PERM_002), hệ thống từ chối yêu cầu.<br>5a. Người dùng không phải chủ bình luận không thể sửa/xóa bình luận đó, trừ quyền kiểm duyệt đã nêu. |
 | Hậu điều kiện | Bình luận được lưu vào bài đăng. |
-| Quy tắc nghiệp vụ | BR-02 |
+| Quy tắc nghiệp vụ | BR-COM-06 |
 
 ### UC-COM-03: Thả reaction
 
@@ -87,23 +95,23 @@ Thông tin phân trang được trả về trong trường `meta` theo quy ướ
 | Actor | Thành viên |
 | Mô tả ngắn | Thành viên thêm hoặc thay đổi reaction trên bài đăng được phép xem. |
 | Tiền điều kiện | Người dùng đã đăng nhập, đã được xác minh và có quyền xem bài đăng. |
-| Luồng chính | 1. Thành viên mở bài đăng.<br>2. Thành viên chọn reaction.<br>3. Hệ thống kiểm tra quyền truy cập.<br>4. Hệ thống lưu reaction và cập nhật kết quả. |
+| Luồng chính | 1. Thành viên mở bài đăng mình được phép xem.<br>2. Thành viên chọn một reaction trong `LIKE`, `LOVE`, `HAHA`, `SAD`.<br>3. Hệ thống kiểm tra quyền và kiểm tra reaction đang hoạt động của thành viên trên bài đó.<br>4. Hệ thống tạo hoặc cập nhật reaction; mỗi thành viên chỉ có một reaction đang hoạt động trên một bài. |
 | Luồng thay thế / ngoại lệ | 2a. Thành viên bỏ reaction hiện tại, hệ thống xóa reaction tương ứng.<br>3a. Người dùng không có quyền xem bài đăng, hệ thống từ chối yêu cầu. |
 | Hậu điều kiện | Reaction của thành viên được cập nhật trên bài đăng. |
-| Quy tắc nghiệp vụ | BR-03 |
+| Quy tắc nghiệp vụ | BR-COM-07 |
 
 ### UC-COM-04: Chia sẻ tin tức gia đình
 
 | Mục | Nội dung |
 |---|---|
 | Mã FR liên quan | FR-COM-03 |
-| Actor | Thành viên |
-| Mô tả ngắn | Thành viên chia sẻ một tin tức liên quan đến gia đình. |
+| Actor | BRANCH_ADMIN; SYSTEM_ADMIN |
+| Mô tả ngắn | Trưởng chi hoặc quản trị hệ thống đăng tin tức gia đình theo quyền được cấp. |
 | Tiền điều kiện | Người dùng đã đăng nhập và đã được xác minh thành viên. |
-| Luồng chính | 1. Thành viên chọn chức năng chia sẻ tin tức gia đình.<br>2. Thành viên nhập nội dung tin tức.<br>3. Hệ thống kiểm tra dữ liệu và quyền truy cập.<br>4. Hệ thống lưu tin tức và hiển thị cho thành viên được phép xem. |
+| Luồng chính | 1. Trưởng chi hoặc quản trị hệ thống chọn chức năng đăng tin tức gia đình.<br>2. Người dùng nhập nội dung tin tức.<br>3. Hệ thống kiểm tra dữ liệu và quyền truy cập.<br>4. Hệ thống lưu tin tức và hiển thị cho thành viên được phép xem. |
 | Luồng thay thế / ngoại lệ | 2a. Nội dung không hợp lệ, hệ thống yêu cầu nhập lại.<br>3a. Người dùng không có quyền, hệ thống từ chối yêu cầu. |
 | Hậu điều kiện | Tin tức gia đình được lưu và hiển thị theo quyền truy cập. |
-| Quy tắc nghiệp vụ | BR-04 |
+| Quy tắc nghiệp vụ | BR-COM-04 |
 
 ### UC-COM-05: Tải và chia sẻ ảnh
 
@@ -114,9 +122,9 @@ Thông tin phân trang được trả về trong trường `meta` theo quy ướ
 | Mô tả ngắn | Thành viên tải ảnh lên và chia sẻ ảnh trong phạm vi gia đình. |
 | Tiền điều kiện | Người dùng đã đăng nhập và đã được xác minh thành viên. |
 | Luồng chính | 1. Thành viên chọn chức năng tải ảnh.<br>2. Thành viên chọn tệp ảnh và gửi yêu cầu.<br>3. Hệ thống kiểm tra tệp và quyền truy cập.<br>4. Hệ thống lưu thông tin ảnh và hiển thị ảnh. |
-| Luồng thay thế / ngoại lệ | 2a. Tệp không hợp lệ, hệ thống từ chối tệp.<br>3a. Người dùng không có quyền, hệ thống từ chối yêu cầu. |
+| Luồng thay thế / ngoại lệ | 2a. Tệp không phải `jpg`, `png`, `webp` hoặc vượt quá 5 MB, hệ thống trả lỗi `FILE_002` hoặc `FILE_001`.<br>3a. Người dùng không có quyền, hệ thống từ chối yêu cầu. |
 | Hậu điều kiện | Ảnh được lưu và có thể được xem bởi các thành viên được phép. |
-| Quy tắc nghiệp vụ | BR-05 |
+| Quy tắc nghiệp vụ | BR-COM-08 |
 
 ### UC-COM-06: Đăng thông báo (announcement)
 
@@ -129,7 +137,7 @@ Thông tin phân trang được trả về trong trường `meta` theo quy ướ
 | Luồng chính | 1. Trưởng chi chọn chức năng tạo thông báo.<br>2. Trưởng chi nhập nội dung thông báo.<br>3. Hệ thống kiểm tra quyền và dữ liệu.<br>4. Hệ thống lưu thông báo và hiển thị cho đối tượng được phép xem. |
 | Luồng thay thế / ngoại lệ | 2a. Nội dung không hợp lệ, hệ thống yêu cầu nhập lại.<br>3a. Người dùng không có quyền Trưởng chi, hệ thống từ chối yêu cầu. |
 | Hậu điều kiện | Thông báo được lưu và hiển thị theo phạm vi được phép. |
-| Quy tắc nghiệp vụ | BR-06 |
+| Quy tắc nghiệp vụ | BR-COM-09 |
 
 ### UC-EVT-01: Tạo sự kiện
 
@@ -142,7 +150,7 @@ Thông tin phân trang được trả về trong trường `meta` theo quy ướ
 | Luồng chính | 1. Người dùng chọn chức năng tạo sự kiện.<br>2. Người dùng nhập thông tin sự kiện.<br>3. Hệ thống kiểm tra dữ liệu và quyền.<br>4. Hệ thống lưu sự kiện và hiển thị thông tin sự kiện. |
 | Luồng thay thế / ngoại lệ | 2a. Thông tin sự kiện không hợp lệ, hệ thống yêu cầu nhập lại.<br>3a. Người dùng không có quyền, hệ thống từ chối yêu cầu. |
 | Hậu điều kiện | Sự kiện được tạo và có thể được thành viên được phép xem. |
-| Quy tắc nghiệp vụ | BR-07 |
+| Quy tắc nghiệp vụ | BR-EVT-01 |
 
 ### UC-EVT-02: RSVP
 
@@ -153,22 +161,22 @@ Thông tin phân trang được trả về trong trường `meta` theo quy ướ
 | Mô tả ngắn | Thành viên chọn trạng thái tham dự một sự kiện. |
 | Tiền điều kiện | Người dùng đã đăng nhập, đã được xác minh và có quyền xem sự kiện. |
 | Luồng chính | 1. Thành viên mở thông tin sự kiện.<br>2. Thành viên chọn trạng thái Tham dự, Không tham dự hoặc Có thể.<br>3. Hệ thống kiểm tra quyền và trạng thái sự kiện.<br>4. Hệ thống lưu trạng thái RSVP. |
-| Luồng thay thế / ngoại lệ | 2a. Thành viên thay đổi lựa chọn, hệ thống cập nhật trạng thái mới.<br>3a. Sự kiện không còn cho phép RSVP, hệ thống thông báo lỗi. |
+| Luồng thay thế / ngoại lệ | 2a. Thành viên thay đổi lựa chọn, hệ thống cập nhật trạng thái mới.<br>3a. Sự kiện đã bắt đầu hoặc đã bị xóa nên không thể RSVP; hệ thống trả lỗi EVT_001. |
 | Hậu điều kiện | Trạng thái RSVP của thành viên được lưu. |
-| Quy tắc nghiệp vụ | BR-08 |
+| Quy tắc nghiệp vụ | BR-EVT-02 |
 
 ### UC-EVT-03: Quản lý người tham dự
 
 | Mục | Nội dung |
 |---|---|
 | Mã FR liên quan | FR-EVT-03 |
-| Actor | Người tạo sự kiện |
+| Actor | MEMBER (người tạo sự kiện); BRANCH_ADMIN |
 | Mô tả ngắn | Người tạo sự kiện xem và quản lý danh sách người tham dự. |
 | Tiền điều kiện | Sự kiện tồn tại và người dùng là người tạo sự kiện. |
-| Luồng chính | 1. Người tạo sự kiện mở sự kiện.<br>2. Hệ thống hiển thị danh sách người tham dự và trạng thái RSVP.<br>3. Người tạo sự kiện thực hiện thao tác quản lý được phép.<br>4. Hệ thống kiểm tra quyền và cập nhật thông tin. |
-| Luồng thay thế / ngoại lệ | 2a. Không có người tham dự, hệ thống hiển thị danh sách trống.<br>3a. Người dùng không phải người tạo sự kiện, hệ thống từ chối thao tác quản lý. |
+| Luồng chính | 1. Người tạo sự kiện hoặc BRANCH_ADMIN trong phạm vi quản lý mở sự kiện.<br>2. Hệ thống hiển thị danh sách người tham dự và trạng thái RSVP; người dùng có thể lọc theo trạng thái.<br>3. Người dùng thêm người tham dự hoặc gỡ người tham dự nếu có quyền.<br>4. Hệ thống kiểm tra quyền và cập nhật danh sách. |
+| Luồng thay thế / ngoại lệ | 2a. Không có người tham dự, hệ thống hiển thị danh sách trống.<br>3a. Người không phải người tạo sự kiện, BRANCH_ADMIN trong phạm vi hoặc SYSTEM_ADMIN bị từ chối nếu không có quyền tương ứng. |
 | Hậu điều kiện | Danh sách người tham dự được cập nhật theo thao tác hợp lệ. |
-| Quy tắc nghiệp vụ | BR-09 |
+| Quy tắc nghiệp vụ | BR-EVT-03 |
 
 ### UC-EVT-04: Thư viện ảnh sự kiện
 
@@ -179,9 +187,9 @@ Thông tin phân trang được trả về trong trường `meta` theo quy ướ
 | Mô tả ngắn | Thành viên xem và chia sẻ ảnh thuộc một sự kiện được phép truy cập. |
 | Tiền điều kiện | Người dùng đã đăng nhập, đã được xác minh và có quyền xem sự kiện. |
 | Luồng chính | 1. Thành viên mở sự kiện.<br>2. Thành viên chọn thư viện ảnh.<br>3. Hệ thống kiểm tra quyền truy cập.<br>4. Hệ thống hiển thị các ảnh thuộc sự kiện. |
-| Luồng thay thế / ngoại lệ | 2a. Sự kiện chưa có ảnh, hệ thống hiển thị thư viện trống.<br>3a. Người dùng không có quyền, hệ thống từ chối truy cập. |
+| Luồng thay thế / ngoại lệ | 2a. Sự kiện chưa có ảnh, hệ thống hiển thị thư viện trống.<br>3a. Người dùng có quyền có thể tải ảnh lên; tệp không đúng định dạng hoặc vượt kích thước bị từ chối.<br>4a. Người dùng không có quyền, hệ thống từ chối truy cập. |
 | Hậu điều kiện | Thành viên xem được các ảnh sự kiện mà mình có quyền truy cập. |
-| Quy tắc nghiệp vụ | BR-10 |
+| Quy tắc nghiệp vụ | BR-EVT-04 |
 
 ### UC-EVT-05: Nhắc nhở sự kiện
 
@@ -194,26 +202,34 @@ Thông tin phân trang được trả về trong trường `meta` theo quy ướ
 | Luồng chính | 1. Hệ thống kiểm tra các sự kiện sắp diễn ra.<br>2. Hệ thống xác định người dùng cần nhận nhắc nhở.<br>3. Hệ thống tạo và gửi thông báo nhắc nhở.<br>4. Hệ thống lưu thông tin thông báo. |
 | Luồng thay thế / ngoại lệ | 2a. Không có người dùng phù hợp, hệ thống không gửi thông báo.<br>3a. Gửi thông báo thất bại, hệ thống ghi nhận trạng thái lỗi. |
 | Hậu điều kiện | Người dùng liên quan nhận được nhắc nhở hoặc hệ thống ghi nhận trạng thái gửi. |
-| Quy tắc nghiệp vụ | BR-11 |
-## 4. Quy tắc nghiệp vụ
+| Quy tắc nghiệp vụ | BR-EVT-05 |
+## 5. Quy tắc nghiệp vụ
 
 | Mã | Quy tắc |
 |---|---|
-| BR-01 | Chỉ thành viên đã đăng nhập và được xác minh mới được tạo và tương tác với nội dung trong phạm vi yêu cầu thành viên. |
-| BR-02 | Thành viên chỉ được bình luận trên bài đăng mà mình có quyền xem. |
-| BR-03 | Thành viên chỉ được thêm, thay đổi hoặc xóa reaction của chính mình. |
-| BR-04 | Tin tức gia đình chỉ được hiển thị cho các thành viên có quyền truy cập vào gia đình tương ứng. |
-| BR-05 | Ảnh và tệp tải lên phải được kiểm tra trước khi lưu và chỉ được chia sẻ trong phạm vi người dùng có quyền truy cập. |
-| BR-06 | Chỉ người dùng có quyền Trưởng chi mới được đăng thông báo theo phạm vi được quản lý. |
-| BR-07 | Chỉ người dùng có quyền tạo sự kiện mới được tạo sự kiện. |
-| BR-08 | Mỗi thành viên có một trạng thái RSVP cho một sự kiện và có thể cập nhật trạng thái của mình. |
-| BR-09 | Chỉ người tạo sự kiện mới được thực hiện các thao tác quản lý người tham dự theo quyền được cấp. |
-| BR-10 | Chỉ thành viên có quyền truy cập sự kiện mới được xem thư viện ảnh của sự kiện. |
-| BR-11 | Hệ thống chỉ gửi nhắc nhở cho những người dùng liên quan đến sự kiện theo thông tin sự kiện và quyền truy cập. |
-| BR-12 | Nội dung bị xóa được xử lý theo cơ chế xóa mềm với trường `deleted_at`. |
-## 5. Thiết kế bảng cơ sở dữ liệu của module
+| BR-COM-01 | Chỉ thành viên đã đăng nhập và được xác minh mới được gọi các API yêu cầu quyền thành viên; người chưa xác minh nhận HTTP 403 với mã `PERM_002`. |
+| BR-COM-02 | Mọi truy vấn dữ liệu Community phải giới hạn theo `family_id` lấy từ ngữ cảnh người dùng đã đăng nhập; không tin `family_id` do client tự gửi. Yêu cầu truy cập dữ liệu của gia đình khác phải bị từ chối (chống IDOR). |
+| BR-COM-03 | `post`, `announcement` và `event` có `branch_id UUID NULL`: `NULL` là phạm vi toàn gia đình; có giá trị là phạm vi chi. Quyền truy cập chi con phải tuân theo cây chi và quyền thành viên đã được xác minh. |
+| BR-COM-04 | `type=POST` cho phép MEMBER đã xác minh tạo bài thường; `type=NEWS` chỉ cho `BRANCH_ADMIN` trở lên. MEMBER không được đổi `type` khi PATCH bài đăng. |
+| BR-COM-05 | Chỉ người tạo được sửa bài. Xóa bài được phép với người tạo, `BRANCH_ADMIN` trong phạm vi chi, hoặc `SYSTEM_ADMIN` khi kiểm duyệt; xóa mềm qua `deleted_at`. |
+| BR-COM-06 | Thành viên chỉ được xem và bình luận trong phạm vi nội dung mình có quyền xem. Người dùng chỉ được sửa/xóa bình luận của chính mình; `BRANCH_ADMIN` trong phạm vi và `SYSTEM_ADMIN` có thể xóa bình luận vi phạm. Độ dài nội dung phải được kiểm tra ở backend; giới hạn số ký tự cụ thể cần thống nhất với SRS nếu chưa có. |
+| BR-COM-07 | Mỗi người dùng chỉ có một reaction đang hoạt động trên mỗi bài; các giá trị hợp lệ: `LIKE`, `LOVE`, `HAHA`, `SAD`. Người dùng chỉ được sửa/xóa reaction của mình. |
+| BR-COM-08 | Ảnh tải lên chỉ nhận `jpg`, `png`, `webp`, tối đa 5 MB; tên tệp được lưu bằng UUID. Ảnh không được công khai bằng URL trực tiếp, phải phục vụ qua endpoint kiểm tra quyền. |
+| BR-COM-09 | Chỉ `BRANCH_ADMIN` trong phạm vi quản lý hoặc `SYSTEM_ADMIN` được tạo/sửa thông báo; `announcement` có `is_pinned` để biểu diễn trạng thái ghim. |
+| BR-COM-10 | Xóa bài, bình luận, reaction, thông báo hoặc media dùng xóa mềm khi tài nguyên có `deleted_at`; hành động xóa nội dung cần audit log theo cơ chế chung SCRUM-57/NFR-11. |
+| BR-EVT-01 | Chỉ MEMBER đã xác minh, `BRANCH_ADMIN` hoặc `SYSTEM_ADMIN` được tạo sự kiện. Người tạo, `BRANCH_ADMIN` trong phạm vi và `SYSTEM_ADMIN` được sửa/xóa sự kiện theo quyền tương ứng. |
+| BR-EVT-02 | RSVP chỉ nhận `GOING`, `NOT_GOING`, `MAYBE`; mỗi người dùng có tối đa một RSVP đang hoạt động cho một sự kiện. Không được RSVP sau khi sự kiện bắt đầu hoặc khi sự kiện đã bị xóa; trả HTTP 409 `EVT_001`. |
+| BR-EVT-03 | Danh sách người tham dự có thể lọc theo trạng thái RSVP. Thêm/gỡ người tham dự chỉ do người tạo sự kiện hoặc vai trò quản trị có quyền trong phạm vi thực hiện. |
+| BR-EVT-04 | `events` dùng media chung do module `community` sở hữu; truy cập ảnh sự kiện phải kiểm tra quyền sự kiện/gia đình. Không tạo bảng ảnh riêng cho events. |
+| BR-EVT-05 | Nhắc nhở chỉ hướng đến người đã RSVP `GOING` hoặc `MAYBE`; thời điểm 24 giờ và 1 giờ trước `start_at` đang là đề xuất cần nhóm xác nhận. Cơ chế chống gửi trùng dùng ràng buộc duy nhất trên `(user_id, ref_id, type)` khi có `ref_id`. Kênh gửi vẫn là câu hỏi mở. |
+| BR-COM-11 | Khi bài đăng được tạo/sửa/xóa, module thông báo cho module `ai` qua interface `AiGateway` để cập nhật embedding; không gọi REST nội bộ. |
+| BR-EVT-06 | Khi sự kiện được tạo/sửa/xóa, module thông báo cho module `ai` qua interface `AiGateway` để cập nhật embedding; không gọi REST nội bộ. |
 
-> Gợi ý tên bảng ở dưới. Với mỗi bảng, điền cột, kiểu dữ liệu, khóa, ràng buộc. **Gửi cho TV2 (Trí) gộp vào ERD tổng muộn nhất đầu tuần 2.** Quy ước: tên bảng `snake_case` số ít, có `created_at`, `updated_at`, `deleted_at` (xóa mềm).
+Mọi API cần có kiểm thử quyền truy cập chéo: người dùng thuộc gia đình A gọi dữ liệu gia đình B phải bị từ chối. Các thao tác xóa bài, bình luận và sự kiện phải phát sinh audit log qua cơ chế chung của hệ thống.
+
+## 6. Thiết kế bảng cơ sở dữ liệu của module
+
+> Các bảng dưới đây là thiết kế của module; `id` dùng UUID. Các trường audit theo quy ước chung gồm `created_at`, `updated_at`, `deleted_at`, `created_by`, `updated_by`.
 
 | Bảng | Mục đích | Trạng thái |
 |---|---|---|
@@ -231,9 +247,10 @@ Thông tin phân trang được trả về trong trường `meta` theo quy ướ
 | Cột | Kiểu | Khóa / Ràng buộc | Mô tả |
 |---|---|---|---|
 | id | UUID | PK | Mã bài đăng |
-| family_id | UUID | NOT NULL | Gia đình sở hữu bài đăng |
+| family_id | UUID | NOT NULL | Gia đình sở hữu bài đăng; kiểm tra ở service, không FK sang module khác |
+| branch_id | UUID | NULL | NULL = cả gia đình; có giá trị = chi/phạm vi chi |
 | content | TEXT | NOT NULL | Nội dung bài đăng |
-| type | VARCHAR(20) | NOT NULL | Loại bài đăng: POST hoặc NEWS |
+| type | VARCHAR(20) | NOT NULL, CHECK | `POST` hoặc `NEWS` |
 | created_by | UUID | NOT NULL | Người tạo bài đăng |
 | updated_by | UUID | NULL | Người cập nhật gần nhất |
 | created_at | TIMESTAMP | NOT NULL | Thời gian tạo |
@@ -246,7 +263,6 @@ Thông tin phân trang được trả về trong trường `meta` theo quy ướ
 |---|---|---|---|
 | id | UUID | PK | Mã bình luận |
 | post_id | UUID | NOT NULL, FK | Bài đăng được bình luận |
-| user_id | UUID | NOT NULL, FK | Người bình luận |
 | content | TEXT | NOT NULL | Nội dung bình luận |
 | created_by | UUID | NOT NULL | Người tạo |
 | updated_by | UUID | NULL | Người cập nhật |
@@ -260,8 +276,7 @@ Thông tin phân trang được trả về trong trường `meta` theo quy ướ
 |---|---|---|---|
 | id | UUID | PK | Mã reaction |
 | post_id | UUID | NOT NULL, FK | Bài đăng được reaction |
-| user_id | UUID | NOT NULL, FK | Người reaction |
-| type | VARCHAR(20) | NOT NULL | Loại reaction |
+| type | VARCHAR(20) | NOT NULL, CHECK | `LIKE`, `LOVE`, `HAHA`, `SAD` |
 | created_by | UUID | NOT NULL | Người tạo |
 | updated_by | UUID | NULL | Người cập nhật |
 | created_at | TIMESTAMP | NOT NULL | Thời gian tạo |
@@ -275,7 +290,10 @@ Thông tin phân trang được trả về trong trường `meta` theo quy ướ
 | Cột | Kiểu | Khóa / Ràng buộc | Mô tả |
 |---|---|---|---|
 | id | UUID | PK | Mã tệp |
-| post_id | UUID | NULL, FK | Bài đăng liên quan |
+| owner_type | VARCHAR(20) | NOT NULL, CHECK | `POST`, `EVENT` hoặc `HERITAGE` |
+| owner_id | UUID | NOT NULL | ID tài nguyên sở hữu; kiểm tra ở service |
+| family_id | UUID | NOT NULL | Gia đình dùng để lọc quyền truy cập |
+| file_size | BIGINT | NOT NULL | Kích thước tệp theo byte |
 | file_name | VARCHAR(255) | NOT NULL | Tên tệp |
 | file_url | TEXT | NOT NULL | Đường dẫn tệp |
 | file_type | VARCHAR(100) | NOT NULL | Loại tệp |
@@ -290,7 +308,9 @@ Thông tin phân trang được trả về trong trường `meta` theo quy ướ
 | Cột | Kiểu | Khóa / Ràng buộc | Mô tả |
 |---|---|---|---|
 | id | UUID | PK | Mã thông báo |
-| family_id | UUID | NOT NULL | Gia đình hoặc chi được thông báo |
+| family_id | UUID | NOT NULL | Gia đình sở hữu thông báo; kiểm tra ở service, không FK chéo module |
+| branch_id | UUID | NULL | NULL = cả gia đình; có giá trị = chi/phạm vi chi |
+| is_pinned | BOOLEAN | NOT NULL DEFAULT FALSE | Trạng thái ghim thông báo |
 | title | VARCHAR(255) | NOT NULL | Tiêu đề thông báo |
 | content | TEXT | NOT NULL | Nội dung thông báo |
 | created_by | UUID | NOT NULL | Người tạo |
@@ -305,7 +325,9 @@ Thông tin phân trang được trả về trong trường `meta` theo quy ướ
 |---|---|---|---|
 | id | UUID | PK | Mã thông báo |
 | user_id | UUID | NOT NULL, FK | Người nhận thông báo |
-| type | VARCHAR(50) | NOT NULL | Loại thông báo |
+| ref_type | VARCHAR(30) | NULL | Loại tài nguyên tham chiếu, ví dụ EVENT hoặc ANNOUNCEMENT |
+| ref_id | UUID | NULL | ID tài nguyên tham chiếu |
+| type | VARCHAR(50) | NOT NULL, CHECK | `EVENT_REMINDER`, `ANNOUNCEMENT` (các giá trị cần đối chiếu SRS nếu còn loại khác) |
 | title | VARCHAR(255) | NOT NULL | Tiêu đề |
 | content | TEXT | NOT NULL | Nội dung |
 | is_read | BOOLEAN | NOT NULL DEFAULT FALSE | Trạng thái đã đọc |
@@ -320,13 +342,14 @@ Thông tin phân trang được trả về trong trường `meta` theo quy ướ
 | Cột | Kiểu | Khóa / Ràng buộc | Mô tả |
 |---|---|---|---|
 | id | UUID | PK | Mã sự kiện |
-| family_id | UUID | NOT NULL | Gia đình tổ chức |
+| family_id | UUID | NOT NULL | Gia đình tổ chức; kiểm tra ở service, không FK sang module khác |
+| branch_id | UUID | NULL | NULL = cả gia đình; có giá trị = chi/phạm vi chi |
 | title | VARCHAR(255) | NOT NULL | Tên sự kiện |
 | description | TEXT | NULL | Mô tả sự kiện |
 | start_at | TIMESTAMP | NOT NULL | Thời gian bắt đầu |
 | end_at | TIMESTAMP | NULL | Thời gian kết thúc |
 | location | VARCHAR(255) | NULL | Địa điểm |
-| created_by | UUID | NOT NULL | Người tạo sự kiện |
+| created_by | UUID | NOT NULL | MEMBER (người tạo sự kiện) |
 | updated_by | UUID | NULL | Người cập nhật |
 | created_at | TIMESTAMP | NOT NULL | Thời gian tạo |
 | updated_at | TIMESTAMP | NOT NULL | Thời gian cập nhật |
@@ -340,48 +363,88 @@ Thông tin phân trang được trả về trong trường `meta` theo quy ướ
 |---|---|---|---|
 | id | UUID | PK | Mã bản ghi tham dự |
 | event_id | UUID | NOT NULL, FK | Sự kiện |
-| user_id | UUID | NOT NULL, FK | Người tham dự |
-| rsvp_status | VARCHAR(20) | NOT NULL | Trạng thái: GOING, NOT_GOING hoặc MAYBE |
-| created_by | UUID | NOT NULL | Người tạo bản ghi |
+| rsvp_status | VARCHAR(20) | NOT NULL, CHECK | `GOING`, `NOT_GOING` hoặc `MAYBE` |
+| created_by | UUID | NOT NULL | Người tham dự (theo quy ước dùng created_by) |
 | updated_by | UUID | NULL | Người cập nhật |
 | created_at | TIMESTAMP | NOT NULL | Thời gian tạo |
 | updated_at | TIMESTAMP | NOT NULL | Thời gian cập nhật |
 | deleted_at | TIMESTAMP | NULL | Xóa mềm |
 
-**Ràng buộc:** Một người dùng chỉ có một trạng thái RSVP đang hoạt động cho một sự kiện.
-## 6. API của module
+**Ràng buộc:** `event_id` tham chiếu `event(id)`; chỉ mục duy nhất từng phần `(event_id, created_by) WHERE deleted_at IS NULL` bảo đảm một RSVP hoạt động cho mỗi người/sự kiện. `created_by` đại diện người dùng thao tác.
 
-> Chi tiết viết trong `../../04-api/openapi/community-events.yaml`. Tóm tắt endpoint ở đây.
+### Khóa ngoại và chỉ mục
+
+- `comment.post_id` → `post(id)`; `reaction.post_id` → `post(id)`; `event_participant.event_id` → `event(id)`; `notification.user_id` → `users(id)` nếu bảng tài khoản trong schema dùng tên `users`. Tên bảng tài khoản cần đối chiếu schema tổng trước khi merge.
+- `family_id`, `branch_id`, `created_by`, `updated_by` thuộc module khác: lưu UUID và kiểm tra quyền ở service, không tạo FK chéo module.
+- Chỉ mục đề xuất: `post(family_id, created_at DESC)`; `comment(post_id, created_at)`; `reaction(post_id, created_by) WHERE deleted_at IS NULL` UNIQUE; `event(family_id, start_at)`; `event_participant(event_id, created_by) WHERE deleted_at IS NULL` UNIQUE; `notification(user_id, is_read, created_at DESC)`; `notification(user_id, ref_id, type) WHERE deleted_at IS NULL` UNIQUE; `media(owner_type, owner_id)`.
+## 6.1. Mã lỗi nghiệp vụ của module
+
+Các lỗi dùng chung (`AUTH_001`, `AUTH_002`, `PERM_001`, `PERM_002`, `VALID_001`, `NOT_FOUND_001`, `FILE_001`, `FILE_002`, `SERVER_001`...) tuân theo `docs/04-api/conventions.md`. Mã riêng của module dùng cho xung đột quy tắc nghiệp vụ và thường trả HTTP `409`.
+
+| Mã lỗi | HTTP | Ý nghĩa |
+|---|---:|---|
+| `EVT_001` | 409 | Sự kiện đã bắt đầu hoặc đã bị xóa nên không thể RSVP. |
+
+Hiện tài liệu chưa xác định mã lỗi nghiệp vụ riêng cho Community; không tự tạo mã `COM_xxx` khi chưa có quy tắc cần mã riêng.
+
+## 7. API của module
+
+> Chi tiết được đặc tả trong `../../04-api/openapi/community-events.yaml`. Các quyền bên dưới luôn được kiểm tra thêm theo `family_id`, `branch_id` và trạng thái xác minh.
 
 | Phương thức | Đường dẫn | Mô tả | Quyền (role) |
 |---|---|---|---|
-| POST | `/api/v1/posts` | Tạo bài đăng | MEMBER đã xác minh |
-| GET | `/api/v1/posts` | Xem danh sách bài đăng | MEMBER đã xác minh |
-| GET | `/api/v1/posts/{id}` | Xem chi tiết bài đăng | MEMBER có quyền xem |
-| PATCH | `/api/v1/posts/{id}` | Sửa bài đăng | Người tạo hoặc người có quyền |
-| DELETE | `/api/v1/posts/{id}` | Xóa bài đăng | Người tạo hoặc người có quyền |
+| POST | `/api/v1/posts` | Tạo bài đăng thường/tin tức | MEMBER đã xác minh (`POST`); BRANCH_ADMIN trở lên (`NEWS`) |
+| GET | `/api/v1/posts` | Danh sách bài đăng; lọc `type`, `branchId`, phân trang | Thành viên có quyền xem |
+| GET | `/api/v1/posts/{id}` | Chi tiết bài đăng | Thành viên có quyền xem |
+| PATCH | `/api/v1/posts/{id}` | Sửa nội dung bài đăng, không đổi `type` | Người tạo |
+| DELETE | `/api/v1/posts/{id}` | Xóa mềm bài đăng | Người tạo; BRANCH_ADMIN trong phạm vi; SYSTEM_ADMIN |
+| GET | `/api/v1/posts/{id}/comments` | Danh sách bình luận | Thành viên có quyền xem bài |
 | POST | `/api/v1/posts/{id}/comments` | Thêm bình luận | MEMBER đã xác minh |
-| POST | `/api/v1/posts/{id}/reactions` | Thêm hoặc thay đổi reaction | MEMBER đã xác minh |
-| DELETE | `/api/v1/posts/{id}/reactions` | Xóa reaction | MEMBER đã xác minh |
-| POST | `/api/v1/posts/{id}/media` | Tải ảnh hoặc tệp lên bài đăng | MEMBER đã xác minh |
-| POST | `/api/v1/announcements` | Tạo thông báo | BRANCH_ADMIN |
-| GET | `/api/v1/announcements` | Xem danh sách thông báo | MEMBER có quyền xem |
-| POST | `/api/v1/events` | Tạo sự kiện | MEMBER có quyền tạo sự kiện |
-| GET | `/api/v1/events` | Xem danh sách sự kiện | MEMBER đã xác minh |
-| GET | `/api/v1/events/{id}` | Xem chi tiết sự kiện | MEMBER có quyền xem |
-| PATCH | `/api/v1/events/{id}` | Cập nhật sự kiện | Người tạo hoặc người có quyền |
-| DELETE | `/api/v1/events/{id}` | Xóa sự kiện | Người tạo hoặc người có quyền |
-| PUT | `/api/v1/events/{id}/rsvp` | Cập nhật trạng thái RSVP | MEMBER đã xác minh |
-| GET | `/api/v1/events/{id}/participants` | Xem danh sách người tham dự | Người tạo sự kiện hoặc người có quyền |
-| GET | `/api/v1/events/{id}/media` | Xem thư viện ảnh sự kiện | MEMBER có quyền xem |
-## 7. Màn hình liên quan
+| PATCH | `/api/v1/comments/{id}` | Sửa bình luận của mình | Người tạo bình luận |
+| DELETE | `/api/v1/comments/{id}` | Xóa bình luận | Người tạo; BRANCH_ADMIN/SYSTEM_ADMIN với nội dung vi phạm |
+| POST | `/api/v1/posts/{id}/reactions` | Thêm/thay reaction | MEMBER đã xác minh |
+| DELETE | `/api/v1/posts/{id}/reactions` | Xóa reaction của mình | MEMBER đã xác minh |
+| POST | `/api/v1/posts/{id}/media` | Tải ảnh lên bài đăng | Thành viên có quyền xem/đăng bài |
+| GET | `/api/v1/media/{id}/content` | Phục vụ nội dung ảnh sau khi kiểm tra quyền | Thành viên có quyền xem tài nguyên |
+| DELETE | `/api/v1/media/{id}` | Xóa media | Người tạo hoặc quản trị được phép |
+| POST | `/api/v1/announcements` | Tạo thông báo | BRANCH_ADMIN; SYSTEM_ADMIN |
+| GET | `/api/v1/announcements` | Danh sách thông báo | Thành viên có quyền xem |
+| GET | `/api/v1/announcements/{id}` | Chi tiết thông báo | Thành viên có quyền xem |
+| PATCH | `/api/v1/announcements/{id}` | Sửa thông báo | BRANCH_ADMIN trong phạm vi; SYSTEM_ADMIN |
+| DELETE | `/api/v1/announcements/{id}` | Xóa thông báo | BRANCH_ADMIN trong phạm vi; SYSTEM_ADMIN |
+| GET | `/api/v1/notifications` | Danh sách thông báo của người đăng nhập | Chủ tài khoản |
+| PATCH | `/api/v1/notifications/{id}/read` | Đánh dấu đã đọc | Chủ tài khoản |
+| POST | `/api/v1/events` | Tạo sự kiện | MEMBER đã xác minh, BRANCH_ADMIN, SYSTEM_ADMIN |
+| GET | `/api/v1/events` | Danh sách sự kiện, lọc thời gian | Thành viên có quyền xem |
+| GET | `/api/v1/events/{id}` | Chi tiết sự kiện | Thành viên có quyền xem |
+| PATCH | `/api/v1/events/{id}` | Sửa sự kiện | Người tạo; BRANCH_ADMIN trong phạm vi; SYSTEM_ADMIN |
+| DELETE | `/api/v1/events/{id}` | Xóa mềm sự kiện | Người tạo; BRANCH_ADMIN trong phạm vi; SYSTEM_ADMIN |
+| PUT | `/api/v1/events/{id}/rsvp` | Tạo/cập nhật RSVP | MEMBER đã xác minh |
+| GET | `/api/v1/events/{id}/participants` | Danh sách người tham dự, lọc RSVP | Người tạo hoặc quản trị có quyền |
+| POST | `/api/v1/events/{id}/participants` | Thêm người tham dự | Người tạo hoặc quản trị có quyền |
+| DELETE | `/api/v1/participants/{id}` | Gỡ bản ghi người tham dự theo ID | Người tạo hoặc quản trị có quyền |
+| GET | `/api/v1/events/{id}/media` | Danh sách ảnh sự kiện | Thành viên có quyền xem sự kiện |
+| POST | `/api/v1/events/{id}/media` | Tải ảnh lên thư viện sự kiện | Thành viên có quyền chia sẻ ảnh |
+
+### Liên kết module
+
+- Package backend: `com.familyconnect.modules.community` và `com.familyconnect.modules.events`.
+- `events` và `heritage` sử dụng ảnh thông qua Java interface của module `community`; không tạo bảng ảnh riêng.
+- Khi bài đăng hoặc sự kiện được tạo, sửa hay xóa, module tương ứng gọi `AiGateway` để thông báo module `ai` cập nhật embedding; không gọi REST nội bộ.
+- Ảnh không được công khai bằng URL lưu trữ trực tiếp; endpoint nội dung phải kiểm tra quyền truy cập trước khi trả file.
+
+## 8. Màn hình liên quan
 
 Màn hình và wireframe của module Community và Events được quản lý trong tài liệu UI chung của nhóm:
 
 `docs/05-ui/figma-links.md`
 
 Link Figma và ảnh wireframe sẽ được bổ sung theo tiến độ thiết kế UI của nhóm.
-## 8. Câu hỏi còn mở
-- [ ] TV2 xác nhận thiết kế các bảng Community và Events để gộp vào ERD tổng.
-- [ ] TV1 review tài liệu và góp ý nếu cần.
-- [ ] Thống nhất cách liên kết ảnh của sự kiện với `media`.
+## 9. Câu hỏi còn mở
+
+- [ ] Nhắc nhở sự kiện gửi qua thông báo trong ứng dụng chỉ, hay gửi thêm push notification trên mobile?
+- [ ] Xác nhận thời điểm nhắc nhở là 24 giờ và 1 giờ trước `start_at` hay lịch khác?
+- [ ] Bài đăng/thông báo/sự kiện có `branch_id` của một chi có được hiển thị cho các chi con không? Quy tắc quyền chi con cần thống nhất với SCRUM-18.
+- [ ] Xác nhận tên chính xác của bảng tài khoản dùng cho FK `notification.user_id` (tài liệu module chỉ ghi tham chiếu sang module tài khoản).
+- [ ] Xác nhận giới hạn độ dài nội dung bài đăng/bình luận theo SRS hoặc validation chung.
+- [ ] Khi thông báo/nhắc nhở được gửi, hệ thống có tạo một bản ghi `notification` riêng cho từng thành viên nhận không?
