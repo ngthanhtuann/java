@@ -20,12 +20,13 @@ tags:
   - { name: parent-child, description: UC-GEN-04 }
   - { name: marriages, description: UC-GEN-05 }
   - { name: tree, description: UC-GEN-06 }
-  - { name: relationships, description: UC-GEN-07, UC-GEN-08 }
+  - { name: relationships, description: "UC-GEN-07, UC-GEN-08" }
 
 paths:
   /families:
     get:
       operationId: listMyFamilies
+      x-roles: [MEMBER, BRANCH_ADMIN, SYSTEM_ADMIN]
       tags: [families]
       summary: Gia đình của tôi (UC-GEN-01)
       description: Trả danh sách gia đình mà người dùng thuộc về (tối đa 1 theo BR-GEN-15, vẫn trả dạng danh sách).
@@ -47,9 +48,10 @@ paths:
         '401': { $ref: '#/components/responses/Unauthorized' }
     post:
       operationId: createFamily
+      x-roles: [MEMBER, SYSTEM_ADMIN]
       tags: [families]
       summary: Tạo gia đình (UC-GEN-01)
-      description: Người tạo trở thành chủ gia đình (BRANCH_ADMIN). Chỉ người chưa thuộc gia đình nào (BR-GEN-15).
+      description: Người dùng thường tạo thì trở thành chủ gia đình (BRANCH_ADMIN quản lý cả gia đình). Chỉ người chưa thuộc gia đình nào (BR-GEN-15), kể cả MEMBER chưa xác minh. SYSTEM_ADMIN cũng được tạo (srs.md Phụ lục A) nhưng không trở thành thành viên hay BRANCH_ADMIN của gia đình và không bị lỗi GEN_013.
       requestBody:
         required: true
         content:
@@ -79,6 +81,7 @@ paths:
       - $ref: '#/components/parameters/familyId'
     get:
       operationId: getFamily
+      x-roles: [MEMBER, BRANCH_ADMIN, SYSTEM_ADMIN]
       tags: [families]
       summary: Xem gia đình (UC-GEN-01)
       responses:
@@ -95,6 +98,7 @@ paths:
         '404': { $ref: '#/components/responses/NotFound' }
     put:
       operationId: updateFamily
+      x-roles: [BRANCH_ADMIN, SYSTEM_ADMIN]
       tags: [families]
       summary: Sửa gia đình (UC-GEN-01)
       description: Quyền BRANCH_ADMIN, SYSTEM_ADMIN.
@@ -119,6 +123,7 @@ paths:
         '404': { $ref: '#/components/responses/NotFound' }
     delete:
       operationId: deleteFamily
+      x-roles: [SYSTEM_ADMIN]
       tags: [families]
       summary: Xóa mềm gia đình (UC-GEN-01)
       description: Chỉ SYSTEM_ADMIN. Còn thành viên thì GEN_001.
@@ -144,6 +149,7 @@ paths:
       - $ref: '#/components/parameters/familyId'
     get:
       operationId: listBranches
+      x-roles: [MEMBER, BRANCH_ADMIN, SYSTEM_ADMIN]
       tags: [branches]
       summary: Danh sách chi họ (UC-GEN-02)
       parameters:
@@ -166,6 +172,7 @@ paths:
         '404': { $ref: '#/components/responses/NotFound' }
     post:
       operationId: createBranch
+      x-roles: [BRANCH_ADMIN, SYSTEM_ADMIN]
       tags: [branches]
       summary: Tạo chi họ (UC-GEN-02)
       requestBody:
@@ -199,6 +206,7 @@ paths:
       - $ref: '#/components/parameters/branchId'
     put:
       operationId: updateBranch
+      x-roles: [BRANCH_ADMIN, SYSTEM_ADMIN]
       tags: [branches]
       summary: Sửa chi họ (UC-GEN-02)
       requestBody:
@@ -228,6 +236,7 @@ paths:
               example: { success: false, error: { code: GEN_003, message: Chi cha tạo vòng lặp, details: [] } }
     delete:
       operationId: deleteBranch
+      x-roles: [BRANCH_ADMIN, SYSTEM_ADMIN]
       tags: [branches]
       summary: Xóa mềm chi họ (UC-GEN-02)
       responses:
@@ -252,6 +261,7 @@ paths:
       - $ref: '#/components/parameters/familyId'
     get:
       operationId: listPersons
+      x-roles: [MEMBER, BRANCH_ADMIN, SYSTEM_ADMIN]
       tags: [persons]
       summary: Danh sách thành viên (UC-GEN-03)
       description: Trường nhạy cảm được ẩn theo vai trò và tuổi (BR-GEN-10). Trường bị ẩn trả null.
@@ -277,6 +287,7 @@ paths:
         '404': { $ref: '#/components/responses/NotFound' }
     post:
       operationId: createPerson
+      x-roles: [BRANCH_ADMIN, SYSTEM_ADMIN]
       tags: [persons]
       summary: Thêm thành viên (UC-GEN-03)
       requestBody:
@@ -310,6 +321,7 @@ paths:
       - $ref: '#/components/parameters/personId'
     get:
       operationId: getPerson
+      x-roles: [MEMBER, BRANCH_ADMIN, SYSTEM_ADMIN]
       tags: [persons]
       summary: Xem hồ sơ thành viên (UC-GEN-03)
       description: Trẻ em dưới 16 tuổi với MEMBER chỉ có tên, năm sinh (các trường khác null).
@@ -327,6 +339,7 @@ paths:
         '404': { $ref: '#/components/responses/NotFound' }
     put:
       operationId: updatePerson
+      x-roles: [BRANCH_ADMIN, SYSTEM_ADMIN]
       tags: [persons]
       summary: Sửa thành viên (UC-GEN-03)
       description: Đánh dấu đã mất thì hôn nhân MARRIED của người đó tự chuyển WIDOWED (BR-GEN-08).
@@ -357,6 +370,7 @@ paths:
               example: { success: false, error: { code: GEN_012, message: Người dưới 16 tuổi không có tài khoản đăng nhập riêng, details: [] } }
     delete:
       operationId: deletePerson
+      x-roles: [BRANCH_ADMIN, SYSTEM_ADMIN]
       tags: [persons]
       summary: Xóa mềm thành viên (UC-GEN-03)
       responses:
@@ -381,6 +395,7 @@ paths:
       - $ref: '#/components/parameters/personId'
     post:
       operationId: addParent
+      x-roles: [BRANCH_ADMIN, SYSTEM_ADMIN]
       tags: [parent-child]
       summary: Thêm cha/mẹ cho thành viên (UC-GEN-04)
       description: personId là người con. Kiểm tra BR-GEN-02 đến 05.
@@ -420,6 +435,7 @@ paths:
       - { name: parentId, in: path, required: true, description: Id người cha/mẹ, schema: { type: string, format: uuid } }
     delete:
       operationId: removeParent
+      x-roles: [BRANCH_ADMIN, SYSTEM_ADMIN]
       tags: [parent-child]
       summary: Gỡ quan hệ cha-mẹ-con (UC-GEN-04)
       responses:
@@ -436,6 +452,7 @@ paths:
   /marriages:
     post:
       operationId: createMarriage
+      x-roles: [BRANCH_ADMIN, SYSTEM_ADMIN]
       tags: [marriages]
       summary: Thêm hôn nhân (UC-GEN-05)
       requestBody:
@@ -472,6 +489,7 @@ paths:
       - $ref: '#/components/parameters/marriageId'
     put:
       operationId: updateMarriage
+      x-roles: [BRANCH_ADMIN, SYSTEM_ADMIN]
       tags: [marriages]
       summary: Đổi trạng thái hôn nhân (UC-GEN-05)
       requestBody:
@@ -495,6 +513,7 @@ paths:
         '404': { $ref: '#/components/responses/NotFound' }
     delete:
       operationId: deleteMarriage
+      x-roles: [BRANCH_ADMIN, SYSTEM_ADMIN]
       tags: [marriages]
       summary: Xóa hôn nhân nhập nhầm (UC-GEN-05)
       responses:
@@ -513,6 +532,7 @@ paths:
       - $ref: '#/components/parameters/familyId'
     get:
       operationId: getFamilyTree
+      x-roles: [MEMBER, BRANCH_ADMIN, SYSTEM_ADMIN]
       tags: [tree]
       summary: Lấy cây gia phả dạng nodes/edges cho React Flow (UC-GEN-06)
       description: |
@@ -546,6 +566,7 @@ paths:
   /relationships:
     get:
       operationId: getRelationship
+      x-roles: [MEMBER, BRANCH_ADMIN, SYSTEM_ADMIN]
       tags: [relationships]
       summary: Truy vấn quan hệ A là gì của B, kèm đường đi (UC-GEN-07, UC-GEN-08)
       description: |
@@ -599,7 +620,7 @@ components:
     branchId: { name: branchId, in: path, required: true, schema: { type: string, format: uuid } }
     personId: { name: personId, in: path, required: true, schema: { type: string, format: uuid } }
     marriageId: { name: marriageId, in: path, required: true, schema: { type: string, format: uuid } }
-    page: { name: page, in: query, description: Trang, bắt đầu từ 0, schema: { type: integer, minimum: 0, default: 0 } }
+    page: { name: page, in: query, description: "Trang, bắt đầu từ 0", schema: { type: integer, minimum: 0, default: 0 } }
     size: { name: size, in: query, description: Số phần tử mỗi trang, schema: { type: integer, minimum: 1, maximum: 100, default: 20 } }
     sort: { name: sort, in: query, description: 'Sắp xếp theo tên trường JSON, ví dụ createdAt,desc', schema: { type: string, default: 'createdAt,desc' } }
 
@@ -833,7 +854,7 @@ components:
         gender: { type: string, enum: [MALE, FEMALE, OTHER] }
         birthYear: { type: integer, nullable: true }
         isDeceased: { type: boolean }
-        hasMoreChildren: { type: boolean, description: Còn nhánh chưa tải, dùng cho mở nhánh lazy-load }
+        hasMoreChildren: { type: boolean, description: "Còn nhánh chưa tải, dùng cho mở nhánh lazy-load" }
     TreeEdge:
       type: object
       properties:

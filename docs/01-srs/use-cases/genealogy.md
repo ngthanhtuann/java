@@ -1,9 +1,9 @@
 # Use case module Gia phả (Genealogy)
 
 > **Người viết:** TV2 (Nguyễn Minh Trí) | **Reviewer:** TV5 (Lê Nhựt) | **Task Jira:** SCRUM-18 (1-05)
-> **Phiên bản:** 0.4 | **Trạng thái:** Chờ review | **Nhánh:** `docs/SCRUM-18-genealogy`
+> **Phiên bản:** 0.4 | **Trạng thái:** Đã merge vào `develop` (Sprint 1) | **Nhánh:** `docs/SCRUM-18-genealogy`
 > **Bám theo:** `docs/01-srs/srs.md` mục 3 (FR-GEN-01 đến FR-GEN-08) và Phụ lục A (phân quyền); `docs/01-srs/privacy.md`; `docs/04-api/conventions.md`; `docs/02-design/architecture.md` mục 7.
-> Mục đánh dấu **[Cần nhóm xác nhận]** là chỗ SRS chưa quy định rõ, TV2 tạm đề xuất.
+> Mục đánh dấu **[Đã chốt 9/10/2026]** là chỗ SRS chưa quy định rõ, TV2 đề xuất và leader (TV1) đã chốt; báo lại cả nhóm ở họp Sprint 2.
 
 ---
 
@@ -13,7 +13,7 @@ Module Gia phả (backend: `com.familyconnect.modules.genealogy`) quản lý gia
 
 | Mã UC | Tên | Actor | Mã FR | Ưu tiên | Sprint | Task Jira |
 |---|---|---|---|---|---|---|
-| UC-GEN-01 | Quản lý gia đình (tạo, sửa, xóa) | Tạo: người dùng đã đăng nhập chưa thuộc gia đình nào; sửa: BRANCH_ADMIN; xóa: SYSTEM_ADMIN | FR-GEN-01 | Must | S3 | SCRUM-37 |
+| UC-GEN-01 | Quản lý gia đình (tạo, sửa, xóa) | Tạo: người dùng đã đăng nhập chưa thuộc gia đình nào, hoặc SYSTEM_ADMIN; sửa: BRANCH_ADMIN, SYSTEM_ADMIN; xóa: SYSTEM_ADMIN | FR-GEN-01 | Must | S3 | SCRUM-37 |
 | UC-GEN-02 | Quản lý chi họ | BRANCH_ADMIN, SYSTEM_ADMIN | FR-GEN-02 | Must | S3 | SCRUM-37 |
 | UC-GEN-03 | Quản lý thành viên (thêm, sửa, xóa) | BRANCH_ADMIN, SYSTEM_ADMIN | FR-GEN-03 (đề tài ghi thiếu chữ, hiểu là *Member management*) | Must | S3 | SCRUM-37 |
 | UC-GEN-04 | Quản lý quan hệ cha-mẹ-con | BRANCH_ADMIN, SYSTEM_ADMIN | FR-GEN-04 | Must | S4 | SCRUM-44 |
@@ -52,12 +52,12 @@ Hệ thống chỉ có 4 vai trò (SRS Phụ lục A): `GUEST`, `MEMBER`, `BRANC
 | Mục | Nội dung |
 |---|---|
 | Mã FR liên quan | FR-GEN-01 |
-| Actor | Tạo mới: người dùng đã đăng nhập chưa thuộc gia đình nào (kể cả `MEMBER` chưa xác minh). Sửa: BRANCH_ADMIN của gia đình, SYSTEM_ADMIN. Xóa: SYSTEM_ADMIN. |
-| Mô tả ngắn | Tạo, sửa, xóa mềm gia đình (dòng họ). Người tạo là "chủ gia đình" (`family.created_by`). |
-| Tiền điều kiện | Đã đăng nhập. Tạo mới: chưa thuộc gia đình nào (BR-GEN-15). Sửa, xóa: có quyền tương ứng trên gia đình đó. |
-| Luồng chính (tạo gia đình) | 1. Người dùng chọn "Tạo gia đình".<br>2. Nhập tên gia đình (bắt buộc, tối đa 150 ký tự), mô tả (tùy chọn).<br>3. Hệ thống kiểm tra hợp lệ, tạo bản ghi `family` với `created_by` là người tạo.<br>4. Hệ thống gán người tạo làm `BRANCH_ADMIN` của gia đình này và đặt trạng thái đã xác minh (qua `member_verification` của module auth) **[Cần nhóm xác nhận]**.<br>5. Hệ thống ghi audit log (cơ chế chung của SCRUM-57) và trả về gia đình vừa tạo. |
-| Luồng thay thế / ngoại lệ | 2a. Tên trống hoặc quá 150 ký tự: lỗi `VALID_001`, giữ nguyên form.<br>2b. Trùng tên với gia đình khác do cùng người tạo: cảnh báo, cho phép tiếp tục.<br>2c. Người dùng đã thuộc một gia đình: lỗi `GEN_013`.<br>Sửa: người có quyền đổi tên, mô tả.<br>Xóa: chỉ `SYSTEM_ADMIN`, xóa mềm; còn thành viên thì lỗi `GEN_001`. |
-| Hậu điều kiện | Gia đình tồn tại; người tạo là BRANCH_ADMIN; thay đổi được ghi audit log. |
+| Actor | Tạo mới: người dùng đã đăng nhập chưa thuộc gia đình nào (kể cả `MEMBER` chưa xác minh), hoặc `SYSTEM_ADMIN` (theo `srs.md` Phụ lục A). Sửa: BRANCH_ADMIN của gia đình, SYSTEM_ADMIN. Xóa: SYSTEM_ADMIN. |
+| Mô tả ngắn | Tạo, sửa, xóa mềm gia đình (dòng họ). Người dùng thường tạo gia đình thì trở thành "chủ gia đình" (BRANCH_ADMIN quản lý cả gia đình, ghi ở `member_verification`); `family.created_by` chỉ ghi nhận ai tạo bản ghi. |
+| Tiền điều kiện | Đã đăng nhập. Tạo mới: chưa thuộc gia đình nào (BR-GEN-15); `SYSTEM_ADMIN` không bị ràng buộc này. Sửa, xóa: có quyền tương ứng trên gia đình đó. |
+| Luồng chính (tạo gia đình) | 1. Người dùng chọn "Tạo gia đình".<br>2. Nhập tên gia đình (bắt buộc, tối đa 150 ký tự), mô tả (tùy chọn).<br>3. Hệ thống kiểm tra hợp lệ, tạo bản ghi `family` với `created_by` là người tạo.<br>4. Hệ thống gán người tạo làm `BRANCH_ADMIN` của gia đình này và đặt trạng thái đã xác minh (qua `member_verification` của module auth) **[Đã chốt 9/10/2026]**.<br>5. Hệ thống ghi audit log (cơ chế chung của SCRUM-57) và trả về gia đình vừa tạo. |
+| Luồng thay thế / ngoại lệ | 2a. Tên trống hoặc quá 150 ký tự: lỗi `VALID_001`, giữ nguyên form.<br>2b. Trùng tên với gia đình khác do cùng người tạo: cảnh báo, cho phép tiếp tục.<br>2c. Người dùng đã thuộc một gia đình (và không phải `SYSTEM_ADMIN`): lỗi `GEN_013`.<br>2d. Người tạo là `SYSTEM_ADMIN`: bỏ qua bước 4, quản trị không trở thành thành viên hay `BRANCH_ADMIN` của gia đình; trưởng chi được gán sau qua chức năng quản lý người dùng (FR-ADM-01) **[Đã chốt 9/10/2026]**.<br>Sửa: người có quyền đổi tên, mô tả.<br>Xóa: chỉ `SYSTEM_ADMIN`, xóa mềm; còn thành viên thì lỗi `GEN_001`. |
+| Hậu điều kiện | Gia đình tồn tại; người tạo là BRANCH_ADMIN (trừ khi người tạo là SYSTEM_ADMIN); thay đổi được ghi audit log. |
 | Quy tắc nghiệp vụ | BR-GEN-09, BR-GEN-11, BR-GEN-14, BR-GEN-15 |
 
 ### UC-GEN-02: Quản lý chi họ
@@ -92,7 +92,7 @@ Hệ thống chỉ có 4 vai trò (SRS Phụ lục A): `GUEST`, `MEMBER`, `BRANC
 | Mô tả ngắn | Gắn hoặc gỡ quan hệ cha/mẹ và con (ruột, nuôi, kế). |
 | Tiền điều kiện | Cả cha/mẹ và con đã là thành viên của cùng một gia đình. |
 | Luồng chính (thêm quan hệ) | 1. Chọn thành viên làm "con", chọn "Thêm cha/mẹ".<br>2. Chọn người cha hoặc mẹ, chọn vai trò (`FATHER`/`MOTHER`) và loại (`BIOLOGICAL` ruột / `ADOPTED` nuôi / `STEP` kế).<br>3. Hệ thống kiểm tra: cùng gia đình, chưa vượt số cha/mẹ ruột, không vòng lặp, ngày sinh hợp lý (BR-GEN-02 đến 05).<br>4. Tạo bản ghi `parent_child`.<br>5. Ghi audit log, làm mới cây. |
-| Luồng thay thế / ngoại lệ | 3a. Con đã có đủ cha và mẹ ruột (cùng vai trò): lỗi `GEN_005`.<br>3b. Thêm quan hệ làm người này thành tổ tiên của chính mình: lỗi `GEN_006`.<br>3c. Cha/mẹ sinh sau hoặc cùng ngày với con: lỗi `GEN_007`. Chênh lệch dưới 15 năm: cảnh báo, cho phép xác nhận **[Cần nhóm xác nhận]**.<br>3d. Cha và con trùng người, hoặc quan hệ đã tồn tại: lỗi `GEN_008`.<br>Gỡ quan hệ: cho phép, ghi audit log; cây tự cập nhật. |
+| Luồng thay thế / ngoại lệ | 3a. Con đã có đủ cha và mẹ ruột (cùng vai trò): lỗi `GEN_005`.<br>3b. Thêm quan hệ làm người này thành tổ tiên của chính mình: lỗi `GEN_006`.<br>3c. Cha/mẹ sinh sau hoặc cùng ngày với con: lỗi `GEN_007`. Chênh lệch dưới 15 năm: giao diện cảnh báo và yêu cầu người nhập xác nhận trước khi gửi; backend không chặn **[Đã chốt 9/10/2026]**.<br>3d. Cha và con trùng người, hoặc quan hệ đã tồn tại: lỗi `GEN_008`.<br>Gỡ quan hệ: cho phép, ghi audit log; cây tự cập nhật. |
 | Hậu điều kiện | Đồ thị gia đình có thêm hoặc bớt một cạnh cha-con, vẫn là đồ thị không chu trình. |
 | Quy tắc nghiệp vụ | BR-GEN-02, 03, 04, 05, 06, 11, 14 |
 
@@ -153,18 +153,18 @@ Hệ thống chỉ có 4 vai trò (SRS Phụ lục A): `GUEST`, `MEMBER`, `BRANC
 | BR-GEN-01 | Mỗi thành viên thuộc đúng một gia đình. Một thành viên thuộc tối đa một chi họ. Mọi quan hệ chỉ được tạo giữa các thành viên cùng gia đình. |
 | BR-GEN-02 | Một người có tối đa **1 cha ruột và 1 mẹ ruột** (loại `BIOLOGICAL`), tức tối đa 2 cha/mẹ sinh học. Cha mẹ nuôi (`ADOPTED`) và kế (`STEP`) được ghi riêng, không tính vào giới hạn này. |
 | BR-GEN-03 | **Không cho phép vòng lặp tổ tiên**: không thể thêm quan hệ làm một người trở thành tổ tiên của chính mình. Hệ thống kiểm tra bằng truy vấn đệ quy trước khi lưu. |
-| BR-GEN-04 | Ngày sinh cha/mẹ phải **trước** ngày sinh con. Chênh lệch dưới 15 năm thì cảnh báo, cho người dùng xác nhận **[Cần nhóm xác nhận]**. |
+| BR-GEN-04 | Ngày sinh cha/mẹ phải **trước** ngày sinh con. Chênh lệch dưới 15 năm thì giao diện cảnh báo và yêu cầu người nhập xác nhận trước khi gửi; backend chỉ từ chối khi cha/mẹ sinh sau hoặc cùng ngày với con (`GEN_007`), vì gia phả đời xưa có trường hợp cha mẹ rất trẻ **[Đã chốt 9/10/2026]**. |
 | BR-GEN-05 | Không tạo quan hệ cha-mẹ-con giữa một người và chính mình, hoặc trùng quan hệ đã tồn tại. |
 | BR-GEN-06 | Vai trò `FATHER`/`MOTHER` mặc định theo giới tính của người được chọn; người nhập có thể đổi khi cần. |
 | BR-GEN-07 | Một người chỉ có **một hôn nhân `MARRIED` tại một thời điểm**. Tái hôn chỉ được khi hôn nhân trước là `DIVORCED` hoặc `WIDOWED`. Không cho kết hôn giữa người có quan hệ trực hệ hoặc anh chị em ruột. |
 | BR-GEN-08 | **Người đã mất:** có `is_deceased` và `death_date` (không trước ngày sinh). Không thêm hôn nhân mới cho người đã mất. Khi một bên được đánh dấu mất, hôn nhân `MARRIED` của họ tự chuyển `WIDOWED`, `end_date` = ngày mất. Hồ sơ vẫn hiển thị và vẫn giữ quan hệ cha-con. Không lưu nguyên nhân tử vong chi tiết. |
 | BR-GEN-09 | **Xóa mềm** (đặt `deleted_at`), không xóa vật lý. Không xóa thành viên đang có quan hệ cha-mẹ-con hoặc hôn nhân khi chưa gỡ. Không xóa gia đình còn thành viên, không xóa chi còn thành viên hoặc chi con. |
-| BR-GEN-10 | **Riêng tư** (theo `privacy.md`, mục "Ai được xem gì" và "Trẻ em và người đã mất"). `MEMBER` đã xác minh: thấy họ tên, năm sinh, quan hệ, nghề nghiệp; **không** thấy ngày sinh đầy đủ (trừ của mình); địa chỉ chi tiết chỉ thấy tỉnh/thành. **Trẻ em dưới 16 tuổi** (tính từ ngày sinh): `MEMBER` chỉ thấy tên, quan hệ, năm sinh; `BRANCH_ADMIN`, `SYSTEM_ADMIN` thấy đủ. **Người đã mất:** hiển thị họ tên, năm sinh, ngày mất, nơi an táng cho thành viên đã xác minh. Số điện thoại, email thuộc hồ sơ người dùng (module `user`), không nằm trong `person`. Quy tắc áp dụng cho mọi response: chi tiết, danh sách, cây, tra quan hệ. **[Cần nhóm xác nhận ngưỡng 16 tuổi, theo `privacy.md` mục "Cần nhóm xác nhận"]** |
+| BR-GEN-10 | **Riêng tư** (theo `privacy.md`, mục "Ai được xem gì" và "Trẻ em và người đã mất"). `MEMBER` đã xác minh: thấy họ tên, năm sinh, quan hệ, nghề nghiệp; **không** thấy ngày sinh đầy đủ (trừ của mình); địa chỉ chi tiết chỉ thấy tỉnh/thành. **Trẻ em dưới 16 tuổi** (tính từ ngày sinh): `MEMBER` chỉ thấy tên, quan hệ, năm sinh; `BRANCH_ADMIN`, `SYSTEM_ADMIN` thấy đủ. **Người đã mất:** hiển thị họ tên, năm sinh, ngày mất, nơi an táng cho thành viên đã xác minh. Số điện thoại, email thuộc hồ sơ người dùng (module `user`), không nằm trong `person`. Quy tắc áp dụng cho mọi response: chi tiết, danh sách, cây, tra quan hệ. **[Đã chốt 9/10/2026: ngưỡng 16 tuổi, theo `privacy.md` mục 4 "Trẻ em và người đã mất"]** |
 | BR-GEN-11 | Mọi thao tác tạo, sửa, xóa gia đình, chi, thành viên, quan hệ, hôn nhân đều ghi **audit log** (người thực hiện, hành động, đối tượng, thời điểm) theo NFR-11, qua cơ chế ghi log chung của SCRUM-57; module Gia phả không tự cài một cơ chế riêng. |
 | BR-GEN-12 | Cây chi họ không có vòng lặp: chi không thể là tổ tiên (chi cha) của chính nó. |
-| BR-GEN-13 | Con nuôi (`ADOPTED`) và con kế (`STEP`) vẫn được tính trong cây; thuật toán quan hệ họ hàng mặc định tính cả hai loại và hiển thị nhãn "nuôi" hoặc "kế" khi cần **[Cần nhóm xác nhận]**. |
-| BR-GEN-14 | **Tách dữ liệu theo gia đình, chống IDOR** (`privacy.md`, mục "Xác minh thành viên và tách dữ liệu gia đình"): mọi API lọc theo `family_id` của người đang đăng nhập (lấy từ `member_verification` của module auth, SCRUM-26); người chưa xác minh nhận 403 `PERM_002`; truy cập gia đình khác nhận 403 `PERM_001`. Mỗi API có một test: gia đình A gọi dữ liệu gia đình B phải bị từ chối. **Phạm vi quyền sửa:** `BRANCH_ADMIN` được gán trong `member_verification` (module auth, SCRUM-26) kèm `branch_id`. `branch_id` có giá trị: quản lý chi đó và các chi con (đi theo `branch.parent_branch_id`). `branch_id` NULL: quản lý cả gia đình (người tạo gia đình, tức `family.created_by`, mặc định thuộc dạng này). Thành viên chưa gán chi chỉ người quản lý cả gia đình mới sửa được. Quan hệ hoặc hôn nhân giữa hai người khác chi cần có quyền ở một trong hai bên. Module Gia phả chỉ lưu UUID, không nối khóa ngoại sang bảng của module auth. |
-| BR-GEN-15 | Mỗi người dùng thuộc tối đa **một gia đình** (khớp việc lọc theo `family_id` của người đăng nhập). Chỉ người chưa thuộc gia đình nào mới tạo gia đình mới **[Cần nhóm xác nhận]**. |
+| BR-GEN-13 | Con nuôi (`ADOPTED`) và con kế (`STEP`) vẫn được tính trong cây; thuật toán quan hệ họ hàng mặc định tính cả hai loại và hiển thị nhãn "nuôi" hoặc "kế" khi cần **[Đã chốt 9/10/2026]**. |
+| BR-GEN-14 | **Tách dữ liệu theo gia đình, chống IDOR** (`privacy.md`, mục "Xác minh thành viên và tách dữ liệu gia đình"): mọi API lọc theo `family_id` của người đang đăng nhập (lấy từ `member_verification` của module auth, SCRUM-26); người chưa xác minh nhận 403 `PERM_002`; truy cập gia đình khác nhận 403 `PERM_001`. Mỗi API có một test: gia đình A gọi dữ liệu gia đình B phải bị từ chối. **Phạm vi quyền sửa:** `BRANCH_ADMIN` được gán trong `member_verification` (module auth, SCRUM-26) kèm `branch_id`. `branch_id` có giá trị: quản lý chi đó và các chi con (đi theo `branch.parent_branch_id`). `branch_id` NULL: quản lý cả gia đình (người dùng thường tạo gia đình mặc định thuộc dạng này; nếu `SYSTEM_ADMIN` tạo hộ thì trưởng chi do quản trị gán sau, không suy ra quyền từ `family.created_by`). Thành viên chưa gán chi chỉ người quản lý cả gia đình mới sửa được. Quan hệ hoặc hôn nhân giữa hai người khác chi cần có quyền ở một trong hai bên. Module Gia phả chỉ lưu UUID, không nối khóa ngoại sang bảng của module auth. |
+| BR-GEN-15 | Mỗi người dùng thuộc tối đa **một gia đình** (khớp việc lọc theo `family_id` của người đăng nhập). Chỉ người chưa thuộc gia đình nào mới tạo gia đình mới; ngoại lệ là `SYSTEM_ADMIN`, được tạo gia đình thay người dùng mà không trở thành thành viên của gia đình đó (`srs.md` Phụ lục A) **[Đã chốt 9/10/2026]**. |
 | BR-GEN-16 | **Trẻ em dưới 16 tuổi không có tài khoản đăng nhập riêng**: `person.user_id` phải là NULL; hồ sơ do cha mẹ hoặc trưởng chi quản lý. Kiểm tra ở tầng service (tuổi thay đổi theo thời gian nên DB không biểu diễn gọn). |
 | BR-GEN-17 | Người **còn sống** phải có ngày sinh đầy đủ (`birth_date`) để hệ thống tính tuổi áp dụng BR-GEN-10. Người đã mất (tổ tiên) có thể chỉ biết năm sinh: lưu vào `birth_year`. |
 | BR-GEN-18 | **Dữ liệu cho AI** (`privacy.md`, mục "Dữ liệu gửi cho AI"): người dưới 16 tuổi chỉ đưa họ tên và quan hệ vào ngữ cảnh; không gửi ngày sinh đầy đủ, địa chỉ chi tiết. Khi thành viên hoặc quan hệ thay đổi, module `ai` cập nhật embedding qua interface Java (mục 9). |
@@ -176,6 +176,8 @@ Hệ thống chỉ có 4 vai trò (SRS Phụ lục A): `GUEST`, `MEMBER`, `BRANC
 Dùng PostgreSQL, thay đổi schema qua Flyway migration (NFR-07). Khóa chính kiểu **UUID** (khớp mẫu `docs/03-database/data-dictionary.md`, nhóm đã chốt). Theo quy ước chung (`architecture.md` mục 7, quyết định 4): tên bảng `snake_case` số ít; **mọi bảng có `id`, `created_at`, `updated_at`, `deleted_at`** (xóa mềm); bảng nghiệp vụ thêm **`created_by`, `updated_by`**; không dùng `created_date`. Các bảng không có tiền tố `ai_`; module khác không join trực tiếp các bảng này (mục 9). Thời điểm (`created_at`, `updated_at`, `deleted_at`) dùng `TIMESTAMPTZ` (lưu theo UTC), khớp định dạng ISO-8601 có múi giờ ở `conventions.md` mục 5; ngày thuần (ngày sinh, ngày mất, ngày cưới) dùng `DATE`.
 
 > **Quy ước:** khóa chính mọi bảng là `UUID` (`DEFAULT gen_random_uuid()`); bảng người dùng tên `users` (ngoại lệ duy nhất của quy ước tên số ít, vì `user` là từ khóa PostgreSQL). Cả hai đã được nhóm chốt.
+>
+> **Khóa ngoại chỉ trong cùng module** (`architecture.md` mục 7, quyết định 9): giữa các bảng của module Gia phả (`family`, `branch`, `person`, `parent_child`, `marriage`) dùng FK như bình thường. Cột tham chiếu sang bảng của module khác (`created_by`, `updated_by`, `user_id` sang `users` của module auth; `avatar_media_id` sang `media` của module community) chỉ lưu UUID có index, không tạo FK; service kiểm tra tồn tại, quyền và `family_id` qua interface Java của module đó.
 
 | Bảng | Mục đích | Task tạo migration |
 |---|---|---|
@@ -191,8 +193,8 @@ Dùng PostgreSQL, thay đổi schema qua Flyway migration (NFR-07). Khóa chính
 | id | UUID | PK | |
 | name | VARCHAR(150) | NOT NULL | Tên gia đình |
 | description | TEXT | | |
-| created_by | UUID | FK `users(id)`, NOT NULL | Người tạo, cũng là "chủ gia đình" |
-| updated_by | UUID | FK `users(id)`, NULL | |
+| created_by | UUID | NOT NULL; tham chiếu `users(id)` của module auth, kiểm tra ở service (không FK) | Người tạo bản ghi. Quyền "chủ gia đình" lấy từ `member_verification`, không suy ra từ cột này (người tạo có thể là `SYSTEM_ADMIN`) |
+| updated_by | UUID | NULL; tham chiếu `users(id)` của module auth, kiểm tra ở service (không FK) | |
 | created_at | TIMESTAMPTZ | NOT NULL, default now() | |
 | updated_at | TIMESTAMPTZ | NOT NULL, default now() | |
 | deleted_at | TIMESTAMPTZ | NULL | Xóa mềm |
@@ -208,13 +210,13 @@ Index: `(created_by)`.
 | parent_branch_id | UUID | FK `branch(id)`, NULL | Chi cha |
 | origin_person_id | UUID | FK `person(id)`, NULL | Người tổ của chi |
 | description | TEXT | | |
-| created_by | UUID | FK `users(id)`, NOT NULL | |
-| updated_by | UUID | FK `users(id)`, NULL | |
+| created_by | UUID | NOT NULL; tham chiếu `users(id)` của module auth, kiểm tra ở service (không FK) | |
+| updated_by | UUID | NULL; tham chiếu `users(id)` của module auth, kiểm tra ở service (không FK) | |
 | created_at | TIMESTAMPTZ | NOT NULL, default now() | |
 | updated_at | TIMESTAMPTZ | NOT NULL, default now() | |
 | deleted_at | TIMESTAMPTZ | NULL | Xóa mềm |
 
-Index: `(family_id)`, `(parent_branch_id)`.
+Index: `(family_id)`, `(parent_branch_id)`, `(origin_person_id)`, `(created_by)`.
 
 ### 6.3 Bảng `person`
 | Cột | Kiểu | Ràng buộc | Ghi chú |
@@ -232,17 +234,17 @@ Index: `(family_id)`, `(parent_branch_id)`.
 | is_deceased | BOOLEAN | NOT NULL, default false | |
 | death_date | DATE | NULL, CHECK (death_date >= birth_date) | |
 | burial_place | VARCHAR(255) | | Nơi an táng; chỉ có ý nghĩa khi đã mất |
-| avatar_media_id | UUID | FK `media(id)`, NULL | Ảnh đại diện. Tệp lưu ở bảng `media` của module `community` (`owner_type = 'PERSON'`), chỉ phục vụ qua endpoint có kiểm tra quyền (`conventions.md` mục 7.1), không lưu đường dẫn công khai |
-| user_id | UUID | FK `users(id)`, NULL | Nối với tài khoản; phải NULL nếu dưới 16 tuổi (BR-GEN-16) |
+| avatar_media_id | UUID | NULL; tham chiếu `media(id)` của module community, kiểm tra ở service (không FK) | Ảnh đại diện. Tệp lưu ở bảng `media` của module `community` (`owner_type = 'PERSON'`), chỉ phục vụ qua endpoint có kiểm tra quyền (`conventions.md` mục 7.3), không lưu đường dẫn công khai |
+| user_id | UUID | NULL; tham chiếu `users(id)` của module auth, kiểm tra ở service (không FK) | Nối với tài khoản; phải NULL nếu dưới 16 tuổi (BR-GEN-16) |
 | note | TEXT | | Không ghi nguyên nhân tử vong chi tiết |
-| created_by | UUID | FK `users(id)`, NOT NULL | |
-| updated_by | UUID | FK `users(id)`, NULL | |
+| created_by | UUID | NOT NULL; tham chiếu `users(id)` của module auth, kiểm tra ở service (không FK) | |
+| updated_by | UUID | NULL; tham chiếu `users(id)` của module auth, kiểm tra ở service (không FK) | |
 | created_at | TIMESTAMPTZ | NOT NULL | |
 | updated_at | TIMESTAMPTZ | NOT NULL | |
 | deleted_at | TIMESTAMPTZ | NULL | Xóa mềm |
 
 Ràng buộc: `CHECK (is_deceased OR birth_date IS NOT NULL)` (người còn sống bắt buộc có ngày sinh); `UNIQUE (user_id) WHERE user_id IS NOT NULL AND deleted_at IS NULL`.
-Index: `(family_id)`, `(branch_id)`, `(full_name)` (hỗ trợ tìm kiếm), `(family_id, birth_date)`, `(family_id, current_province)`.
+Index: `(family_id)`, `(branch_id)`, `(full_name)` (hỗ trợ tìm kiếm), `(family_id, birth_date)`, `(family_id, current_province)`, `(avatar_media_id)`, `(created_by)`; `user_id` đã có chỉ mục duy nhất từng phần ở trên.
 
 ### 6.4 Bảng `parent_child`
 | Cột | Kiểu | Ràng buộc | Ghi chú |
@@ -252,13 +254,13 @@ Index: `(family_id)`, `(branch_id)`, `(full_name)` (hỗ trợ tìm kiếm), `(f
 | child_id | UUID | FK `person(id)`, NOT NULL | |
 | parent_role | VARCHAR(10) | NOT NULL, CHECK IN ('FATHER','MOTHER') | |
 | kind | VARCHAR(12) | NOT NULL, default 'BIOLOGICAL', CHECK IN ('BIOLOGICAL','ADOPTED','STEP') | |
-| created_by | UUID | FK `users(id)`, NOT NULL | |
-| updated_by | UUID | FK `users(id)`, NULL | |
+| created_by | UUID | NOT NULL; tham chiếu `users(id)` của module auth, kiểm tra ở service (không FK) | |
+| updated_by | UUID | NULL; tham chiếu `users(id)` của module auth, kiểm tra ở service (không FK) | |
 | created_at | TIMESTAMPTZ | NOT NULL | |
 | updated_at | TIMESTAMPTZ | NOT NULL | |
 | deleted_at | TIMESTAMPTZ | NULL | Xóa mềm |
 
-Ràng buộc: `CHECK (parent_id <> child_id)`; `UNIQUE (parent_id, child_id) WHERE deleted_at IS NULL`; **chỉ mục duy nhất từng phần** `UNIQUE (child_id, parent_role) WHERE kind = 'BIOLOGICAL' AND deleted_at IS NULL` (đảm bảo tối đa 1 cha ruột và 1 mẹ ruột). Index: `(parent_id)`, `(child_id)`.
+Ràng buộc: `CHECK (parent_id <> child_id)`; `UNIQUE (parent_id, child_id) WHERE deleted_at IS NULL`; **chỉ mục duy nhất từng phần** `UNIQUE (child_id, parent_role) WHERE kind = 'BIOLOGICAL' AND deleted_at IS NULL` (đảm bảo tối đa 1 cha ruột và 1 mẹ ruột). Index: `(parent_id)`, `(child_id)`, `(created_by)`.
 
 ### 6.5 Bảng `marriage`
 | Cột | Kiểu | Ràng buộc | Ghi chú |
@@ -269,13 +271,13 @@ Ràng buộc: `CHECK (parent_id <> child_id)`; `UNIQUE (parent_id, child_id) WHE
 | status | VARCHAR(10) | NOT NULL, CHECK IN ('MARRIED','DIVORCED','WIDOWED') | |
 | start_date | DATE | NULL | |
 | end_date | DATE | NULL | Ngày ly hôn hoặc góa |
-| created_by | UUID | FK `users(id)`, NOT NULL | |
-| updated_by | UUID | FK `users(id)`, NULL | |
+| created_by | UUID | NOT NULL; tham chiếu `users(id)` của module auth, kiểm tra ở service (không FK) | |
+| updated_by | UUID | NULL; tham chiếu `users(id)` của module auth, kiểm tra ở service (không FK) | |
 | created_at | TIMESTAMPTZ | NOT NULL | |
 | updated_at | TIMESTAMPTZ | NOT NULL | |
 | deleted_at | TIMESTAMPTZ | NULL | Xóa mềm |
 
-Ràng buộc: `CHECK (person1_id <> person2_id)`. Các quy tắc "một hôn nhân `MARRIED` tại một thời điểm", "không cho kết hôn người thân" và "hai người cùng gia đình" kiểm tra ở tầng service (DB không biểu diễn gọn). Index: `(person1_id)`, `(person2_id)`.
+Ràng buộc: `CHECK (person1_id <> person2_id)`. Các quy tắc "một hôn nhân `MARRIED` tại một thời điểm", "không cho kết hôn người thân" và "hai người cùng gia đình" kiểm tra ở tầng service (DB không biểu diễn gọn). Index: `(person1_id)`, `(person2_id)`, `(created_by)`.
 
 ### 6.6 Vì sao dùng bảng quan hệ `parent_child` thay vì cột `parent_id` trong `person`
 1. **Một người có hai cha mẹ.** Một cột `parent_id` chỉ lưu được một người. Dùng hai cột `father_id`, `mother_id` thì không biểu diễn được cha mẹ nuôi hoặc cha mẹ kế.
@@ -327,7 +329,7 @@ Tất cả API nằm dưới `/api/v1`, tên tài nguyên số nhiều, theo `do
 | Method | Đường dẫn | Mục đích | UC | Quyền |
 |---|---|---|---|---|
 | GET | `/families` | Gia đình của tôi | UC-GEN-01 | Người đã đăng nhập |
-| POST | `/families` | Tạo gia đình | UC-GEN-01 | Người đã đăng nhập, chưa thuộc gia đình nào |
+| POST | `/families` | Tạo gia đình | UC-GEN-01 | Người đã đăng nhập, chưa thuộc gia đình nào; SYSTEM_ADMIN |
 | GET | `/families/{familyId}` | Xem gia đình | UC-GEN-01 | MEMBER đã xác minh trở lên (gia đình của mình) |
 | PUT | `/families/{familyId}` | Sửa gia đình | UC-GEN-01 | BRANCH_ADMIN, SYSTEM_ADMIN |
 | DELETE | `/families/{familyId}` | Xóa mềm gia đình | UC-GEN-01 | SYSTEM_ADMIN |
@@ -348,7 +350,7 @@ Tất cả API nằm dưới `/api/v1`, tên tài nguyên số nhiều, theo `do
 | GET | `/families/{familyId}/tree` | Lấy cây dạng nodes và edges | UC-GEN-06 | MEMBER đã xác minh trở lên |
 | GET | `/relationships` | Truy vấn A là gì của B, kèm đường đi (`personA`, `personB`) | UC-GEN-07, 08 | MEMBER đã xác minh trở lên |
 
-### 7.2 Mã lỗi riêng của module (theo `conventions.md` mục 3.2)
+### 7.2 Mã lỗi riêng của module (theo `conventions.md` mục 3.1)
 
 Mã chung dùng nguyên: `VALID_001` (400), `NOT_FOUND_001` (404), `PERM_001` (403, không đủ quyền hoặc gia đình khác), `PERM_002` (403, chưa xác minh), `AUTH_002` (401). Mã riêng của module (đều HTTP 409, vi phạm quy tắc nghiệp vụ):
 
@@ -391,12 +393,12 @@ Ngày mất trước ngày sinh, người còn sống thiếu ngày sinh, chi h�
 
 | Với module | Cách làm | Quy ước |
 |---|---|---|
-| `auth`, `admin` (SCRUM-26, 35, 57) | Biết người dùng thuộc gia đình nào, đã xác minh chưa, vai trò gì qua bảng `member_verification`; module Gia phả không tạo bảng thành viên riêng. | Chỉ lưu `user_id` (UUID), không dùng quan hệ entity xuyên module |
+| `auth`, `admin` (SCRUM-26, 35, 57) | Biết người dùng thuộc gia đình nào, đã xác minh chưa, vai trò gì qua bảng `member_verification`; module Gia phả không tạo bảng thành viên riêng. | Chỉ lưu `user_id`, `created_by`, `updated_by` (UUID, không FK), không dùng quan hệ entity xuyên module |
 | Audit log (SCRUM-57) | Ghi log tự động qua cơ chế chung (AOP hoặc event listener) khi tạo, sửa, xóa. | BR-GEN-11 |
 | `ai` (SCRUM-55, 63) | Cung cấp dữ liệu thành viên, quan hệ cho embedding qua **interface Java** của module `genealogy` (tên chốt khi làm SCRUM-37, ví dụ `GenealogyGateway`); báo `ai` cập nhật embedding khi dữ liệu đổi. | Quyết định 3 trong `architecture.md`; BR-GEN-18 |
 | `directory` | Tìm danh bạ theo tỉnh/thành dùng `person.current_province` và theo thế hệ (mục 6.8) qua interface Java. | Không join trực tiếp bảng `person`, `parent_child` |
 | `dashboard` | Thống kê số thành viên, giới tính, thế hệ (mục 6.8) qua interface Java. | Không join trực tiếp |
-| `community` (SCRUM-20) | Ảnh đại diện thành viên lưu ở bảng `media` (`owner_type = 'PERSON'`); Gia phả chỉ giữ `avatar_media_id`, không tạo bảng ảnh riêng. | `conventions.md` mục 7.1; ảnh và tệp đính kèm dùng `media` của `community` |
+| `community` (SCRUM-20) | Ảnh đại diện thành viên lưu ở bảng `media` (`owner_type = 'PERSON'`); Gia phả chỉ giữ `avatar_media_id` (UUID, không FK), không tạo bảng ảnh riêng; service kiểm tra tệp tồn tại và cùng `family_id` qua interface của `community`. | `conventions.md` mục 7.3; ảnh và tệp đính kèm dùng `media` của `community` |
 
 ---
 
@@ -407,10 +409,10 @@ Ngày mất trước ngày sinh, người còn sống thiếu ngày sinh, chi h�
 
 ## 11. Câu hỏi còn mở
 
-1. Ai được tạo gia đình? Đề xuất: người dùng đã đăng nhập chưa thuộc gia đình nào, trở thành BRANCH_ADMIN của gia đình đó. Cần thêm hàng "Tạo gia đình" vào SRS Phụ lục A. (UC-GEN-01, BR-GEN-15)
-2. Cha mẹ sinh cách con dưới 15 năm thì cảnh báo hay từ chối? (BR-GEN-04)
-3. Con nuôi, con kế có được tính trong thuật toán quan hệ họ hàng không? (BR-GEN-13)
-4. Nhóm hiểu FR-GEN-07 "Relationship visualization" là tô sáng đường quan hệ giữa hai người (như UC-GEN-07), hay là toàn bộ việc vẽ cây? Nếu là vẽ cây thì gộp UC-GEN-07 vào UC-GEN-06.
-5. Ngưỡng trẻ em là dưới 16 tuổi (theo `privacy.md`): cần nhóm xác nhận. (BR-GEN-10, 16)
-6. Các mã `GEN_001` đến `GEN_013` ở mục 7.2 là mã riêng của module, theo quy tắc `<MODULE>_<số>` (HTTP 409) ở `conventions.md` mục 3.2; không cần thêm vào bảng mã chung.
-7. Cách tính thế hệ ở mục 6.8 (người vào gia đình bằng hôn nhân lấy đời của vợ/chồng) cần nhóm xác nhận; `directory` và `dashboard` phụ thuộc vào cách tính này.
+1. Ai được tạo gia đình? **Đã chốt 9/10/2026:** theo SRS Phụ lục A, người dùng chưa thuộc gia đình nào (trở thành BRANCH_ADMIN quản lý cả gia đình và được coi là đã xác minh) và SYSTEM_ADMIN. Khi SYSTEM_ADMIN tạo thì quản trị không thành thành viên; trưởng chi được gán sau qua quản lý người dùng (UC-GEN-01 luồng 2d). Mỗi người dùng thuộc tối đa một gia đình (BR-GEN-15); người thuộc cả bên nội và bên ngoại chỉ gắn tài khoản với một gia đình, đây là giới hạn phạm vi của đồ án.
+2. Cha mẹ sinh cách con dưới 15 năm thì cảnh báo hay từ chối? **Đã chốt 9/10/2026:** cảnh báo ở giao diện, backend không chặn. (BR-GEN-04)
+3. Con nuôi, con kế có được tính trong thuật toán quan hệ họ hàng không? **Đã chốt 9/10/2026:** có, kèm nhãn "(nuôi)" hoặc "(kế)", khớp `algorithm-relationship.md`. (BR-GEN-13)
+4. FR-GEN-07 "Relationship visualization" là gì? **Đã chốt 9/10/2026:** là tô sáng đường quan hệ giữa hai người (UC-GEN-07); việc vẽ cây thuộc FR-GEN-06 (UC-GEN-06). Giữ hai use case riêng.
+5. Ngưỡng trẻ em: **đã chốt 9/10/2026** là dưới 16 tuổi, theo `privacy.md` mục 4. (BR-GEN-10, 16)
+6. Các mã `GEN_001` đến `GEN_013` ở mục 7.2 là mã riêng của module, theo quy tắc `<MODULE>_<số>` (HTTP 409) ở `conventions.md` mục 3.1; không cần thêm vào bảng mã chung.
+7. Cách tính thế hệ ở mục 6.8 (người vào gia đình bằng hôn nhân lấy đời của vợ/chồng): **đã chốt 9/10/2026**; `directory` và `dashboard` dùng đúng cách tính này.

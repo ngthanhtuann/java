@@ -1,5 +1,5 @@
 > **Người viết:** TV4 (Huy Quốc) | **Reviewer:** Nguyễn Thanh Tuấn | **Task Jira:** SCRUM-22
-> **Trạng thái:** Chờ review | **Phiên bản:** 0.2 (đã sửa theo review của TV1)
+> **Trạng thái:** Đã merge vào `develop` (Sprint 1) | **Phiên bản:** 0.2 (đã sửa theo review của TV1)
 
 # TÀI LIỆU ĐẶC TẢ MODULE: HERITAGE, DIRECTORY, DASHBOARD
 **Nhánh Git:** docs/SCRUM-22-heritage-directory-dashboard
@@ -28,8 +28,8 @@ Theo tài liệu SRS mục 3, các yêu cầu chức năng thuộc phạm vi 3 m
 
 ### 2.2 Danh sách Actor & Mối quan hệ
 *   **Thành viên (MEMBER):** Người dùng đã đăng nhập và được Trưởng chi xác minh vào gia đình (sở hữu `family_id` hợp lệ).
-*   **Quản trị viên chi họ (BRANCH_ADMIN):** Kế thừa toàn bộ quyền hạn của MEMBER, bổ sung quyền quản lý tài liệu lịch sử và người tiêu biểu, xem dashboard và xuất dữ liệu tổng hợp trong phạm vi chi họ của mình (hoặc toàn gia đình nếu `branch_id` rỗng).
-*   **Quản trị viên hệ thống (SYSTEM_ADMIN):** Kế thừa toàn bộ quyền hạn của BRANCH_ADMIN (và MEMBER), có quyền quản lý và trích xuất dữ liệu trên toàn bộ gia đình.
+*   **Trưởng chi (BRANCH_ADMIN):** Kế thừa toàn bộ quyền hạn của MEMBER, bổ sung quyền quản lý tài liệu lịch sử và người tiêu biểu, xem dashboard và xuất dữ liệu tổng hợp trong phạm vi chi họ của mình (hoặc toàn gia đình nếu `branch_id` rỗng).
+*   **Quản trị hệ thống (SYSTEM_ADMIN):** Kế thừa toàn bộ quyền hạn của BRANCH_ADMIN (và MEMBER), có quyền quản lý và trích xuất dữ liệu trên toàn bộ gia đình.
 *   **Phân quyền theo bảng "Ai được làm gì" của `srs.md`:** MEMBER **không** xem dashboard và không xuất báo cáo; MEMBER chỉ **xem** tài liệu lịch sử, được thêm câu chuyện và ảnh; chỉ BRANCH_ADMIN và SYSTEM_ADMIN thêm/sửa/xóa tài liệu lịch sử và quản lý người tiêu biểu.
 
 ### 2.3 Đặc tả chi tiết 8 Use Case
@@ -58,7 +58,7 @@ Theo tài liệu SRS mục 3, các yêu cầu chức năng thuộc phạm vi 3 m
 | :--- | :--- |
 | **Mã UC / FR** | UC-HER-01 / FR-HER-01, FR-HER-05 |
 | **Actor** | BRANCH_ADMIN, SYSTEM_ADMIN (thêm, sửa, xóa); MEMBER (chỉ xem danh sách và chi tiết) |
-| **Tiền điều kiện** | File tải lên qua module Community, có `media_id` hợp lệ, thuộc cùng `family_id` của người dùng. |
+| **Tiền điều kiện** | File tải lên qua module Community (`POST /api/v1/media`, `ownerType = HERITAGE`), có `media_id` hợp lệ, thuộc cùng `family_id` của người dùng. Tệp tài liệu (`pdf`, tối đa 10 MB) và ảnh (`jpg`, `png`, `webp`, tối đa 5 MB) cùng lưu ở bảng `media` với `owner_type = HERITAGE`; việc cho phép `pdf` đã chốt 9/10/2026 (`conventions.md` mục 7.3, BR-COM-08). |
 | **Luồng chính** | 1. Thêm mới: Nhập Tiêu đề, Mô tả, Danh mục và `media_id`. Hệ thống kiểm tra `media_id` tồn tại và `media.family_id` trùng `family_id` của người dùng, sau đó ghi bản ghi vào `heritage_document`.<br>2. Sửa/Xóa: Hệ thống kiểm tra vai trò BRANCH_ADMIN hoặc SYSTEM_ADMIN trong gia đình của người dùng, rồi cập nhật/xóa mềm.<br>3. Báo module AI cập nhật embedding qua interface. |
 | **Luồng lỗi** | - MEMBER thêm/sửa/xóa, hoặc dùng `media_id` của gia đình khác: 403 PERM_001.<br>- Chưa xác minh: 403 PERM_002.<br>- Dữ liệu thiếu: 400 VALID_001.<br>- Không tìm thấy tài liệu: 404 NOT_FOUND_001. |
 | **Hậu điều kiện** | Tài liệu xuất hiện/được cập nhật/bị xóa trong kho lưu trữ số. |
@@ -69,7 +69,7 @@ Theo tài liệu SRS mục 3, các yêu cầu chức năng thuộc phạm vi 3 m
 | **Mã UC / FR** | UC-HER-02 / FR-HER-02 |
 | **Actor** | MEMBER, BRANCH_ADMIN, SYSTEM_ADMIN |
 | **Tiền điều kiện** | Đã đăng nhập và xác minh. |
-| **Luồng chính** | 1. Thêm mới: Nhập Tiêu đề, Nội dung và (tùy chọn) đối tượng liên quan `related_person_id` (phải thuộc cùng `family_id`). Hệ thống lưu vào `family_story` và gán `created_by` là người đăng.<br>2. Sửa/Xóa: Hệ thống kiểm tra quyền (tác giả hoặc Admin) và thực hiện.<br>3. Báo module AI cập nhật embedding qua interface. |
+| **Luồng chính** | 1. Thêm mới: Nhập Tiêu đề, Nội dung và (tùy chọn) đối tượng liên quan `related_person_id` (hệ thống kiểm tra qua interface genealogy: người này tồn tại và thuộc cùng `family_id`). Hệ thống lưu vào `family_story` và gán `created_by` là người đăng.<br>2. Sửa/Xóa: Hệ thống kiểm tra quyền (tác giả hoặc Admin) và thực hiện.<br>3. Báo module AI cập nhật embedding qua interface. |
 | **Luồng lỗi** | - Cố sửa/xóa chuyện của người khác khi không có quyền: 403 PERM_001.<br>- Chưa xác minh: 403 PERM_002.<br>- Rỗng tiêu đề/nội dung: 400 VALID_001.<br>- Không tìm thấy câu chuyện: 404 NOT_FOUND_001. |
 | **Hậu điều kiện** | Câu chuyện hiển thị/cập nhật/bị xóa trên bảng tin di sản. |
 | **Quy tắc** | **BR-HER-02:** Tên tác giả hiển thị sẽ tra cứu qua interface bằng ID người đăng. |
@@ -79,17 +79,17 @@ Theo tài liệu SRS mục 3, các yêu cầu chức năng thuộc phạm vi 3 m
 | **Mã UC / FR** | UC-HER-03 / FR-HER-04 |
 | **Actor** | MEMBER, BRANCH_ADMIN, SYSTEM_ADMIN |
 | **Tiền điều kiện** | Đã đăng nhập và xác minh. |
-| **Luồng chính** | 1. Gửi yêu cầu GET đọc danh sách ảnh từ module community qua interface với điều kiện `owner_type = 'HERITAGE'` và `family_id`.<br>2. Trả kết quả ảnh phân trang.<br>*(Tải ảnh lên dùng `POST /api/v1/media` của community với `ownerType = HERITAGE`; MEMBER và BRANCH_ADMIN được tải theo `srs.md`.)* |
+| **Luồng chính** | 1. Gửi yêu cầu GET đọc danh sách ảnh từ module community qua interface với điều kiện `owner_type = 'HERITAGE'` và `family_id`.<br>2. Trả kết quả ảnh phân trang.<br>*(Tải ảnh lên dùng `POST /api/v1/media` của community với `ownerType = HERITAGE`; MEMBER và BRANCH_ADMIN được tải theo `srs.md`. Tệp tài liệu `pdf` cũng dùng `media` với `owner_type = HERITAGE` nhưng thuộc UC-HER-01, không hiện ở thư viện ảnh.)* |
 | **Luồng lỗi** | - Chưa xác minh: 403 PERM_002.<br>*(Ghi chú: Việc upload tệp bị quá dung lượng hoặc sai định dạng do module community xử lý)* |
 | **Hậu điều kiện** | Người dùng xem được danh sách hình ảnh di sản. |
-| **Quy tắc** | **BR-HER-03:** Không có bảng riêng, đọc trực tiếp từ `media` (`owner_type = HERITAGE`, cùng `family_id`). Ảnh nào đã được `heritage_document` tham chiếu (bản scan tài liệu) thì **không** hiện trong thư viện ảnh, chỉ hiện ở UC-HER-01. |
+| **Quy tắc** | **BR-HER-03:** Không có bảng riêng, đọc trực tiếp từ `media` (`owner_type = HERITAGE`, cùng `family_id`). Thư viện ảnh chỉ gồm tệp ảnh (`jpg`, `png`, `webp`) **chưa** được `heritage_document` tham chiếu. Tệp tài liệu (`pdf`) và ảnh đã được `heritage_document` tham chiếu (bản scan tài liệu) thì **không** hiện trong thư viện ảnh, chỉ hiện ở UC-HER-01. |
 
 | Tên Use Case | UC-HER-04: Quản lý người tiêu biểu |
 | :--- | :--- |
 | **Mã UC / FR** | UC-HER-04 / FR-HER-03 |
 | **Actor** | BRANCH_ADMIN, SYSTEM_ADMIN |
 | **Tiền điều kiện** | Có quyền quản trị tương ứng với phạm vi gia đình/chi họ (BR-GEN-14). |
-| **Luồng chính** | 1. Chọn thành viên, nhập thành tích, thứ tự.<br>2. Kiểm tra `person_id` thuộc cùng `family_id` (với BRANCH_ADMIN: thuộc chi của mình).<br>3. Ghi vào `outstanding_member`. |
+| **Luồng chính** | 1. Chọn thành viên, nhập thành tích, thứ tự.<br>2. Kiểm tra qua interface genealogy: `person_id` tồn tại và thuộc cùng `family_id` (với BRANCH_ADMIN: thuộc chi của mình).<br>3. Ghi vào `outstanding_member`. |
 | **Luồng lỗi** | - Member thông thường hoặc thao tác ngoài chi của mình: 403 PERM_001.<br>- Chưa xác minh: 403 PERM_002.<br>- Trùng người đã vinh danh: 409 HER_001.<br>- Dữ liệu không hợp lệ: 400 VALID_001.<br>- Không tìm thấy: 404 NOT_FOUND_001. |
 | **Hậu điều kiện** | Danh sách người tiêu biểu được cập nhật. |
 | **Quy tắc** | **BR-HER-04:** Chỉ quản trị viên thêm/sửa/xóa. Mỗi người chỉ xuất hiện 1 lần. |
@@ -141,7 +141,7 @@ Tiền tố `/api/v1`. Mọi API trả lỗi theo `conventions.md`; danh sách c
 | GET | `/dashboard/statistics` | UC-DSH-01 | BRANCH_ADMIN, SYSTEM_ADMIN | VALID_001, AUTH_002, PERM_001, PERM_002 |
 | GET | `/dashboard/reports/members` | UC-DSH-02 | BRANCH_ADMIN, SYSTEM_ADMIN | VALID_001, AUTH_002, PERM_001, PERM_002 |
 
-API xóa trả `200` với `{ "success": true, "data": null }`, không dùng `204` (`conventions.md`, mục 2.2).
+API xóa trả `200` với `{ "success": true, "data": null }`, không dùng `204` (`conventions.md`, mục 1.3).
 
 ### 3.2 Liên kết module khác
 *   **Genealogy:** Cung cấp nhân khẩu học qua `GenealogyInterface.getDemographics()`.
@@ -157,121 +157,110 @@ API xóa trả `200` với `{ "success": true, "data": null }`, không dùng `20
 
 ### 3.4 Quyết định đã chốt và câu hỏi còn mở
 **Đã chốt**
-1. **Cách tính thế hệ:** theo `genealogy.md` mục 6.8 (đời 1 là người không có cha mẹ trong gia đình; người vào bằng hôn nhân lấy đời của vợ/chồng; lấy giá trị lớn nhất). Dashboard và danh bạ lấy qua `GenealogyInterface.getDemographics()`, không tự viết truy vấn đệ quy riêng.
+1. **Cách tính thế hệ:** theo `genealogy.md` mục 6.8 (đời 1 là người không có cha mẹ trong gia đình; người vào bằng hôn nhân lấy đời của vợ/chồng; lấy giá trị lớn nhất). Quy tắc lấy đời của vợ/chồng đã chốt 9/10/2026 (`genealogy.md` mục 11, câu 7). Dashboard và danh bạ lấy qua `GenealogyInterface.getDemographics()`, không tự viết truy vấn đệ quy riêng.
 2. **Quyền của BRANCH_ADMIN với tài liệu chung:** có, theo `srs.md` ("Có (tất cả)"). Tài liệu lịch sử thuộc cả gia đình, không gắn chi.
+3. **Xóa tài liệu (9/10/2026):** xóa mềm `heritage_document` thì **giữ** tệp trong kho và giữ bản ghi `media` để khôi phục được.
 
-**Còn mở (cần nhóm xác nhận)**
-1. **Xóa tệp vật lý:** đề xuất khi xóa mềm `heritage_document` thì **giữ** tệp trong kho để khôi phục; việc dọn tệp mồ côi quyết định cùng spike lưu trữ ảnh (SCRUM-31).
+**Còn mở (quyết định ở SCRUM-31)**
+1. **Dọn tệp mồ côi:** thời điểm và cách xóa vật lý các tệp không còn bản ghi nào dùng được quyết định cùng spike lưu trữ ảnh (SCRUM-31).
 
 ## 4. THIẾT KẾ CƠ SỞ DỮ LIỆU
-*Quy ước chung: Khóa chính UUID. Các bảng có `id`, `created_at`, `updated_at`, `deleted_at`, `created_by` (FK -> `users(id)`), `updated_by` (FK -> `users(id)`). FK dùng `ON DELETE RESTRICT`.*
+*Quy ước chung: Khóa chính UUID. Các bảng có `id`, `created_at`, `updated_at`, `deleted_at`, `created_by` (NOT NULL), `updated_by` (NULL cho đến lần sửa đầu tiên, giống các module khác). Khóa ngoại chỉ dùng giữa các bảng trong cùng module (`architecture.md` mục 7, quyết định 9). Năm bảng dưới đây chỉ tham chiếu bảng của module khác (`users` của auth; `family`, `person` của genealogy; `media` của community) nên **không khai báo FK**: các cột này lưu UUID thường, có index, và service kiểm tra tồn tại, quyền và `family_id` qua interface Java của module tương ứng.*
 
 ```sql
 -- 1. Bảng tài liệu lịch sử
 -- Mục đích: Lưu trữ thông tin tham chiếu đến các tệp/hình ảnh tài liệu (gia phả, sắc phong) của dòng họ.
 CREATE TABLE heritage_document (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    family_id UUID NOT NULL,
+    family_id UUID NOT NULL,                   -- tham chiếu family của module genealogy, kiểm tra ở service
     title VARCHAR(255) NOT NULL,
     description TEXT,
     category VARCHAR(100),
-    media_id UUID NOT NULL,
+    media_id UUID NOT NULL,                    -- tham chiếu media của module community, kiểm tra ở service
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     deleted_at TIMESTAMP WITH TIME ZONE NULL,
-    created_by UUID NOT NULL,
-    updated_by UUID NOT NULL,
-    CONSTRAINT fk_heritage_doc_media FOREIGN KEY (media_id) REFERENCES media(id) ON DELETE RESTRICT,
-    CONSTRAINT fk_heritage_doc_family FOREIGN KEY (family_id) REFERENCES family(id) ON DELETE RESTRICT,
-    CONSTRAINT fk_heritage_doc_creator FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE RESTRICT,
-    CONSTRAINT fk_heritage_doc_updater FOREIGN KEY (updated_by) REFERENCES users(id) ON DELETE RESTRICT
+    created_by UUID NOT NULL,                  -- tham chiếu users của module auth, kiểm tra ở service
+    updated_by UUID NULL                       -- tham chiếu users của module auth, kiểm tra ở service
 );
 CREATE INDEX idx_heritage_doc_media ON heritage_document (media_id);
 CREATE INDEX idx_heritage_doc_family ON heritage_document (family_id, created_at DESC) WHERE deleted_at IS NULL;
+CREATE INDEX idx_heritage_doc_creator ON heritage_document (created_by);
 
 -- 2. Bảng câu chuyện gia đình
 -- Mục đích: Lưu trữ các bài viết hồi ký, câu chuyện tiểu sử liên quan đến dòng họ hoặc cá nhân.
 CREATE TABLE family_story (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    family_id UUID NOT NULL,
+    family_id UUID NOT NULL,                   -- tham chiếu family của module genealogy, kiểm tra ở service
     title VARCHAR(255) NOT NULL,
     content TEXT NOT NULL,
-    related_person_id UUID NULL,
+    related_person_id UUID NULL,               -- tham chiếu person của module genealogy, kiểm tra ở service
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     deleted_at TIMESTAMP WITH TIME ZONE NULL,
-    created_by UUID NOT NULL,
-    updated_by UUID NOT NULL,
-    CONSTRAINT fk_family_story_family FOREIGN KEY (family_id) REFERENCES family(id) ON DELETE RESTRICT,
-    CONSTRAINT fk_family_story_related FOREIGN KEY (related_person_id) REFERENCES person(id) ON DELETE RESTRICT,
-    CONSTRAINT fk_family_story_creator FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE RESTRICT,
-    CONSTRAINT fk_family_story_updater FOREIGN KEY (updated_by) REFERENCES users(id) ON DELETE RESTRICT
+    created_by UUID NOT NULL,                  -- tham chiếu users của module auth, kiểm tra ở service
+    updated_by UUID NULL                       -- tham chiếu users của module auth, kiểm tra ở service
 );
 CREATE INDEX idx_family_story_family ON family_story (family_id, created_at DESC) WHERE deleted_at IS NULL;
 CREATE INDEX idx_family_story_related ON family_story (related_person_id) WHERE deleted_at IS NULL AND related_person_id IS NOT NULL;
+CREATE INDEX idx_family_story_creator ON family_story (created_by);
 
 -- 3. Bảng người tiêu biểu
 -- Mục đích: Vinh danh những cá nhân xuất sắc trong dòng họ, quy định thứ tự hiển thị trên danh sách.
 CREATE TABLE outstanding_member (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    family_id UUID NOT NULL,
-    person_id UUID NOT NULL,
+    family_id UUID NOT NULL,                   -- tham chiếu family của module genealogy, kiểm tra ở service
+    person_id UUID NOT NULL,                   -- tham chiếu person của module genealogy, kiểm tra ở service
     achievement TEXT NOT NULL,
     display_order INT NOT NULL DEFAULT 0,
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     deleted_at TIMESTAMP WITH TIME ZONE NULL,
-    created_by UUID NOT NULL,
-    updated_by UUID NOT NULL,
-    CONSTRAINT fk_outstanding_person FOREIGN KEY (person_id) REFERENCES person(id) ON DELETE RESTRICT,
-    CONSTRAINT fk_outstanding_family FOREIGN KEY (family_id) REFERENCES family(id) ON DELETE RESTRICT,
-    CONSTRAINT fk_outstanding_creator FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE RESTRICT,
-    CONSTRAINT fk_outstanding_updater FOREIGN KEY (updated_by) REFERENCES users(id) ON DELETE RESTRICT
+    created_by UUID NOT NULL,                  -- tham chiếu users của module auth, kiểm tra ở service
+    updated_by UUID NULL                       -- tham chiếu users của module auth, kiểm tra ở service
 );
 CREATE UNIQUE INDEX uq_outstanding_person ON outstanding_member (family_id, person_id) WHERE deleted_at IS NULL;
 CREATE INDEX idx_outstanding_display ON outstanding_member (family_id, display_order);
+CREATE INDEX idx_outstanding_person ON outstanding_member (person_id);
+CREATE INDEX idx_outstanding_creator ON outstanding_member (created_by);
 
 -- 4. Bảng hồ sơ nghề nghiệp
 -- Mục đích: Lưu trữ 1 dòng hồ sơ công việc/công ty hiện tại của một cá nhân từ 16 tuổi trở lên.
 CREATE TABLE profession_profile (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    family_id UUID NOT NULL,
-    person_id UUID NOT NULL,
+    family_id UUID NOT NULL,                   -- tham chiếu family của module genealogy, kiểm tra ở service
+    person_id UUID NOT NULL,                   -- tham chiếu person của module genealogy, kiểm tra ở service
     job_title VARCHAR(150) NOT NULL,
     company VARCHAR(255),
     work_location VARCHAR(255),
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     deleted_at TIMESTAMP WITH TIME ZONE NULL,
-    created_by UUID NOT NULL,
-    updated_by UUID NOT NULL,
-    CONSTRAINT fk_prof_person FOREIGN KEY (person_id) REFERENCES person(id) ON DELETE RESTRICT,
-    CONSTRAINT fk_prof_family FOREIGN KEY (family_id) REFERENCES family(id) ON DELETE RESTRICT,
-    CONSTRAINT fk_prof_creator FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE RESTRICT,
-    CONSTRAINT fk_prof_updater FOREIGN KEY (updated_by) REFERENCES users(id) ON DELETE RESTRICT
+    created_by UUID NOT NULL,                  -- tham chiếu users của module auth, kiểm tra ở service
+    updated_by UUID NULL                       -- tham chiếu users của module auth, kiểm tra ở service
 );
 CREATE UNIQUE INDEX uq_prof_person ON profession_profile (person_id) WHERE deleted_at IS NULL;
+CREATE INDEX idx_prof_family ON profession_profile (family_id);
+CREATE INDEX idx_prof_creator ON profession_profile (created_by);
 
 -- 5. Bảng hồ sơ học vấn
 -- Mục đích: Lưu trữ 1 dòng bằng cấp/trường học cao nhất hoặc hiện tại của một cá nhân.
 CREATE TABLE education_profile (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    family_id UUID NOT NULL,
-    person_id UUID NOT NULL,
+    family_id UUID NOT NULL,                   -- tham chiếu family của module genealogy, kiểm tra ở service
+    person_id UUID NOT NULL,                   -- tham chiếu person của module genealogy, kiểm tra ở service
     school VARCHAR(255) NOT NULL,
     degree VARCHAR(100),
     graduation_year INT CHECK (graduation_year >= 1900),
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     deleted_at TIMESTAMP WITH TIME ZONE NULL,
-    created_by UUID NOT NULL,
-    updated_by UUID NOT NULL,
-    CONSTRAINT fk_edu_person FOREIGN KEY (person_id) REFERENCES person(id) ON DELETE RESTRICT,
-    CONSTRAINT fk_edu_family FOREIGN KEY (family_id) REFERENCES family(id) ON DELETE RESTRICT,
-    CONSTRAINT fk_edu_creator FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE RESTRICT,
-    CONSTRAINT fk_edu_updater FOREIGN KEY (updated_by) REFERENCES users(id) ON DELETE RESTRICT
+    created_by UUID NOT NULL,                  -- tham chiếu users của module auth, kiểm tra ở service
+    updated_by UUID NULL                       -- tham chiếu users của module auth, kiểm tra ở service
 );
 CREATE UNIQUE INDEX uq_edu_person ON education_profile (person_id) WHERE deleted_at IS NULL;
+CREATE INDEX idx_edu_family ON education_profile (family_id);
+CREATE INDEX idx_edu_creator ON education_profile (created_by);
 ```
 ## 5. CHỈ SỐ DASHBOARD & CÂU TRUY VẤN SQL THAM KHẢO
 > Các câu SQL dưới đây mô tả logic. Khi triển khai, mỗi module chỉ truy vấn bảng của mình; dữ liệu của module khác lấy qua interface Java (không join chéo module). BRANCH_ADMIN chỉ xem trong phạm vi chi (thêm điều kiện `branch_id` khi có `branchId`).
@@ -302,6 +291,8 @@ WHERE family_id = :familyId AND deleted_at IS NULL
 GROUP BY gender;
 ```
 ### 5.4 Thống kê nghề nghiệp (loại trừ trẻ dưới 16 tuổi và người đã mất)
+> Câu dưới chỉ mô tả điều kiện lọc. Khi triển khai không join `profession_profile` với `person` (khác module): module directory lấy danh sách `person_id` hợp lệ (còn sống, từ 16 tuổi, đúng `family_id` và `branchId`) từ `GenealogyInterface`, rồi đếm trên `profession_profile` với `person_id = ANY(:personIds)`.
+
 ```sql
 SELECT pf.job_title, COUNT(*) AS count
 FROM profession_profile pf

@@ -1,6 +1,6 @@
 # Kiến trúc tổng thể
 > **Người viết:** TV4 (Huy Quốc) | **Reviewer:** TV2 (Nguyễn Minh Trí) | **Task Jira:** SCRUM-23 | **Hạn nộp review:** Thứ Tư 7/10
-> **Trạng thái:** Chờ review
+> **Trạng thái:** Đã merge vào `develop` (Sprint 1)
 
 ## 1. Sơ đồ thành phần
 > Thể hiện đúng kiến trúc đề tài: **Web Management Portal**, **Mobile Application**, **AI Service Layer** kết nối qua **RESTful API**. Các khối logic trong Spring Boot backend và cách xử lý lỗi tập trung.
@@ -297,3 +297,4 @@ Hệ thống được thiết kế không chỉ để giải quyết các luồn
 | 6 | Lỗi trả về theo `docs/04-api/conventions.md` (`success:false, error:{code,message,details}`) | Một chuẩn lỗi cho web và mobile | Tất cả backend |
 | 7 | AI: tài khoản chưa xác minh không dùng được (403, `PERM_002`); giới hạn số câu hỏi (429, `RATE_001`); lọc theo `family_id` trước khi tạo ngữ cảnh | Theo `docs/01-srs/privacy.md` | Lê Nhựt |
 | 8 | Mục tiêu triển khai: 2 bản Spring Boot sau Nginx (Sprint 7, SCRUM-96); hiện chạy 1 bản | Đáp ứng NFR-10 | Huy Quốc (Docker) |
+| 9 | Khóa ngoại cơ sở dữ liệu (`FOREIGN KEY ... REFERENCES`) chỉ dùng giữa các bảng trong cùng một module. Tham chiếu sang bảng của module khác (ví dụ `users`, `family`, `person`, `media`, `branch` khi ở module khác) chỉ lưu cột UUID thường, có index; service kiểm tra tồn tại, quyền và `family_id` qua interface Java của module đó | Khớp quyết định 3 (module chỉ gọi nhau qua interface, không join chéo); cho phép tách module thành service sau này | Trí (ERD), tất cả backend |

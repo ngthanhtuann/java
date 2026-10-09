@@ -1,7 +1,7 @@
 # ADR: Spike AI, RAG, Spring AI, pgvector
 
 > **Người làm:** TV5 (Lê Nhựt) | **Reviewer:** TV3 (PiLo257) | **Task Jira:** SCRUM-24
-> **Trạng thái:** Chờ review | **Ngày thử nghiệm:** [Nhựt điền: dd/mm/2026]
+> **Trạng thái:** Chờ review (còn các mục chưa đo, bổ sung ở Sprint 2) | **Ngày thử nghiệm:** chưa ghi, bổ sung ở SCRUM-34 (Sprint 2)
 > Mã thử nghiệm nằm ở nhánh `spike/SCRUM-24-rag` (không merge vào `develop`). **Không có API key trong repo.** Thiết kế chi tiết RAG viết ở `ai-rag.md` (SCRUM-34, Sprint 2).
 
 ## 1. Bối cảnh
@@ -14,8 +14,8 @@ FamilyConnect cần chatbot hỏi đáp gia phả và tìm kiếm ngữ nghĩa b
 |---|---|
 | Nhà cung cấp | Google Gemini API (gói miễn phí) |
 | Model embedding | `gemini-embedding-001` |
-| Model LLM | [Nhựt điền tên model chính xác, ví dụ phiên bản Flash đã gọi] |
-| Thư viện | Spring AI [điền phiên bản], pgvector [điền phiên bản] |
+| Model LLM | Chưa đo, bổ sung ở SCRUM-34 (Sprint 2) |
+| Thư viện | Spring AI, pgvector (phiên bản chưa ghi, bổ sung ở SCRUM-34 (Sprint 2)) |
 | Dữ liệu thử | 10 câu tiếng Việt về gia phả (dữ liệu giả, không dùng dữ liệu thật của gia đình) |
 | Khóa API | Biến môi trường `GEMINI_API_KEY`, không commit |
 
@@ -26,7 +26,7 @@ FamilyConnect cần chatbot hỏi đáp gia phả và tìm kiếm ngữ nghĩa b
 | Chỉ số | Kết quả |
 |---|---|
 | Số chiều mặc định của model | 3072 |
-| Thời gian tạo embedding trung bình | 683,5 ms (số lần đo: [Nhựt điền]) |
+| Thời gian tạo embedding trung bình | 683,5 ms (số lần đo: Chưa đo, bổ sung ở SCRUM-34 (Sprint 2)) |
 
 ### 3.2. Tìm kiếm ngữ nghĩa (10 câu, lấy 3 câu gần nhất)
 
@@ -34,17 +34,17 @@ FamilyConnect cần chatbot hỏi đáp gia phả và tìm kiếm ngữ nghĩa b
 |---|---|
 | Thời gian tìm kiếm trung bình | 588,3 ms |
 | P95 | 628,2 ms |
-| Thời gian trên đã gồm bước tạo embedding cho câu hỏi chưa? | [Nhựt điền: có / không] |
+| Thời gian trên đã gồm bước tạo embedding cho câu hỏi chưa? | Chưa đo, bổ sung ở SCRUM-34 (Sprint 2) |
 
-Chất lượng tiếng Việt: [Nhựt điền bảng 10 câu hỏi, 3 câu trả về và đánh dấu đúng/sai. Ví dụ: 8/10 câu có kết quả đúng nằm trong top 3 → kết luận Đạt.]
+Chất lượng tiếng Việt: Chưa có bảng đánh giá 10 câu; bổ sung ở Sprint 2.
 
 ### 3.3. Gọi LLM với ngữ cảnh
 
 | Chỉ số | Kết quả |
 |---|---|
-| Độ trễ trả lời (đo từ lúc gửi đến khi nhận đủ) | [Nhựt điền: trung bình và P95, số lần đo] |
-| Chất lượng câu trả lời tiếng Việt | [Nhựt điền: 5 câu mẫu, đúng ngữ cảnh / bịa thêm / từ chối đúng] |
-| Hành vi khi ngữ cảnh không có thông tin | [Nhựt điền: có trả lời "Không tìm thấy thông tin" không] |
+| Độ trễ trả lời (đo từ lúc gửi đến khi nhận đủ) | Chưa đo, bổ sung ở SCRUM-34 (Sprint 2) |
+| Chất lượng câu trả lời tiếng Việt | Chưa đo, bổ sung ở SCRUM-34 (Sprint 2) |
+| Hành vi khi ngữ cảnh không có thông tin | Chưa đo, bổ sung ở SCRUM-34 (Sprint 2) |
 
 ### 3.4. Chi phí ước tính
 
@@ -54,16 +54,16 @@ Chất lượng tiếng Việt: [Nhựt điền bảng 10 câu hỏi, 3 câu tr�
 | LLM, đầu ra | $3,75 / 1 triệu token |
 | Mức giá áp dụng đến | 31/12/2026; từ 01/01/2027 tăng gấp đôi ($1,50 / $7,50) |
 | Gói miễn phí | Đầu vào và đầu ra miễn phí, nhưng nội dung được Google dùng để cải thiện sản phẩm |
-| Nguồn | https://ai.google.dev/gemini-api/docs/pricing (tra ngày 09/10/2026; giá trên áp dụng cho dòng Gemini Flash 3.6, 3.7, 3.8; [Nhựt điền đúng tên model đã dùng]) |
+| Nguồn | https://ai.google.dev/gemini-api/docs/pricing (tra ngày 09/10/2026; giá trên áp dụng cho dòng Gemini Flash 3.6, 3.7, 3.8; tên model đã dùng: Chưa đo, bổ sung ở SCRUM-34 (Sprint 2)) |
 
-Ước tính cho nhóm: [Nhựt điền: số câu hỏi mỗi ngày x số token trung bình = chi phí mỗi tháng. Gói miễn phí giới hạn bao nhiêu yêu cầu mỗi phút / mỗi ngày.]
+Ước tính cho nhóm: Chưa đo, bổ sung ở SCRUM-34 (Sprint 2).
 
 ## 4. Phát hiện kỹ thuật cần xử lý
 
 1. **Số chiều vector.** `gemini-embedding-001` trả 3072 chiều mặc định, nhưng pgvector chỉ tạo được chỉ mục HNSW và IVFFlat cho kiểu `vector` tối đa 2000 chiều. Hai cách xử lý:
    - Chọn `outputDimensionality` 768 hoặc 1536 khi gọi API (đề xuất, vì nhẹ và đủ cho gia phả), hoặc
    - Dùng kiểu `halfvec(3072)` (chỉ mục tối đa 4000 chiều).
-   - **Quyết định cho thiết kế:** [Nhóm chốt: 768 / 1536 / halfvec] và ghi vào `ai-rag.md`.
+   - **Quyết định cho thiết kế (đã chốt 9/10/2026):** dùng `outputDimensionality = 768`, cột `vector(768)` với chỉ mục HNSW. Lý do: nằm trong giới hạn 2000 chiều của chỉ mục, nhẹ nhất về lưu trữ và tốc độ, đủ cho dữ liệu gia phả cỡ vài trăm đến vài nghìn đoạn. SCRUM-34 ghi vào `ai-rag.md`; nếu bảng đánh giá 10 câu tiếng Việt ở Sprint 2 không đạt thì thử lại với 1536.
 2. **Tên bảng.** Bảng vector đặt là `ai_embedding_chunk` (tiền tố `ai_` theo `architecture.md` mục 7), không dùng `embedding_chunk`.
 
 ## 5. Rủi ro
@@ -79,13 +79,13 @@ Chất lượng tiếng Việt: [Nhựt điền bảng 10 câu hỏi, 3 câu tr�
 
 ## 6. Quyết định
 
-**Chọn Google Gemini** làm nhà cung cấp LLM và embedding cho giai đoạn đồ án, tích hợp qua Spring AI.
+**Quyết định sơ bộ chọn Gemini, xác nhận sau khi hoàn tất đo ở Sprint 2.** Google Gemini dự kiến là nhà cung cấp LLM và embedding cho giai đoạn đồ án, tích hợp qua Spring AI.
 
-Lý do: đã tích hợp và đo thành công với tiếng Việt, độ trễ chấp nhận được, có gói miễn phí phù hợp phát triển. [Nhựt bổ sung lý do so sánh với OpenAI nếu có thử.]
+Lý do sơ bộ: đã tích hợp được, đã đo thời gian tạo embedding và tìm kiếm (mục 3.1, 3.2), có gói miễn phí phù hợp phát triển. Chất lượng tiếng Việt và độ trễ gọi LLM chưa đo (mục 3.2, 3.3). Chưa có so sánh với OpenAI; bổ sung ở SCRUM-34 (Sprint 2) nếu có thử.
 
 Điều kiện đi kèm: giải quyết số chiều vector (mục 4), thực hiện các biện pháp giảm rủi ro ở mục 5.
 
 ## 7. Việc tiếp theo
 
 - SCRUM-34: viết `ai-rag.md` (phân đoạn dữ liệu, prompt hệ thống, ngưỡng điểm, giới hạn, quyền dữ liệu) dựa trên quyết định này.
-- Bảng `ai_embedding_chunk` đưa vào ERD (SCRUM-26 trở đi) với số chiều đã chốt.
+- Bảng `ai_embedding_chunk` đưa vào ERD (SCRUM-28) với cột `vector(768)`.

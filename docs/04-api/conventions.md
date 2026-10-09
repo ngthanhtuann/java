@@ -3,7 +3,7 @@
 > **Người viết:** TV3 (PiLo257)
 > **Reviewer:** TV1 (Tuấn Nguyễn Thanh)
 > **Task Jira:** SCRUM-21
-> **Trạng thái:** Chờ review
+> **Trạng thái:** Đã merge vào `develop` (Sprint 1)
 
 Tài liệu này quy định chuẩn API chung của FamilyConnect cho web và mobile. Tất cả module phải tuân theo tài liệu này khi thiết kế OpenAPI và triển khai backend.
 
@@ -287,7 +287,7 @@ Authorization: Bearer <access_token>
 | Đăng nhập                  | 5 lần/phút theo IP và email |
 | Chat AI                    | 20 câu/giờ/người dùng       |
 | Kích thước JSON request    | Tối đa 1 MB                 |
-| Kích thước request tải tệp | Tối đa 10 MB/request        |
+| Dung lượng tệp trong một request tải tệp | Tối đa 10 MB/request (mục 7.3) |
 
 Khi vượt giới hạn request, trả HTTP `429` với mã `RATE_001` và header `Retry-After` để client biết thời gian chờ trước khi thử lại.
 
@@ -304,11 +304,12 @@ Khi vượt giới hạn request, trả HTTP `429` với mã `RATE_001` và head
 * Request tải tệp sử dụng `multipart/form-data`, tên trường là `file`.
 * Định dạng ảnh được hỗ trợ: `jpg`, `png`, `webp`.
 * Mỗi tệp ảnh tối đa 5 MB.
+* Ngoại lệ cho tài liệu lịch sử và kho lưu trữ số (FR-HER-01, FR-HER-05): với `owner_type = HERITAGE`, cho phép thêm định dạng `pdf`, tối đa 10 MB mỗi tệp. Mọi trường hợp khác giữ `jpg`, `png`, `webp`, tối đa 5 MB. Đã chốt 9/10/2026.
 * Tên tệp lưu trữ được tạo bằng UUID, không sử dụng trực tiếp tên tệp do người dùng cung cấp làm tên lưu trữ.
 * Tệp chỉ được truy cập qua endpoint có kiểm tra quyền, không công khai chỉ bằng URL tệp.
 * Tệp vượt giới hạn trả HTTP `413 FILE_001`.
 * Định dạng tệp không được hỗ trợ trả HTTP `415 FILE_002`.
-* Tổng kích thước request tải tệp không vượt quá giới hạn 10 MB/request.
+* Tổng kích thước các tệp trong một request tải tệp không vượt quá 10 MB. Giới hạn này tính trên dung lượng tệp; cấu hình máy chủ (`max-request-size`) đặt 11 MB để chừa phần đầu `multipart`, nhờ đó tệp `pdf` đúng 10 MB không bị từ chối.
 
 ## 8. Quy ước OpenAPI
 
